@@ -26,7 +26,7 @@ export function HubScene({ animal }: Props) {
       <AnimalCharacter
         animal={animal}
         count={charCount}
-        position={animal === 'cat' ? [1.4, -0.4, 0] : animal === 'wolf' ? [1.5, 0.3, 0] : [1.6, -0.2, 0]}
+        position={animal === 'cat' ? [1.0, -1.1, 0] : animal === 'wolf' ? [1.5, 0.3, 0] : [1.6, -0.2, 0]}
         scale={1.2}
       />
     </PersistentCanvas>

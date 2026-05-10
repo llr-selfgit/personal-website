@@ -8,19 +8,25 @@ import { samplePositionsFromAlpha } from '@/lib/particles'
 import { RippleManager, computeRippleForce, DEFAULT_RIPPLE_PARAMS } from '@/lib/ripple'
 import type { Animal } from '@/lib/types'
 
-// NDC-scaled ripple (canvas 视口高约 5 NDC 单位)
-const RIPPLE_NDC = {
+// 摄像机参数（next.config 里 PersistentCanvas 设的 fov=50, position.z=5）
+const FOV_RAD = (50 * Math.PI) / 180
+const CAM_Z = 5
+const HALF_TAN = Math.tan(FOV_RAD / 2)
+// 视口高度（世界单位）的一半 = tan(fov/2) * camera distance ≈ 2.33
+
+// World-space ripple params（particles 在 ~[-1,1] 局部空间）
+const RIPPLE_WORLD = {
   ...DEFAULT_RIPPLE_PARAMS,
-  speed: 0.6,        // 220 px/s 在 ~viewport 高 900px → 0.5-0.7 NDC/s
-  maxRadius: 0.35,   // 130px → ~0.3-0.4 NDC
-  bandThickness: 0.06,
-  pushStrength: 0.06,
+  speed: 0.8,         // 世界单位/s
+  maxRadius: 0.6,     // 比之前大 70% — 范围更明显
+  bandThickness: 0.08,
+  pushStrength: 0.12, // 比之前大 2x — 推力更明显
 }
 
 const PALETTES: Record<Animal, [number, number, number]> = {
-  cat: [1.0, 0.85, 0.68],   // 明亮暖琥珀（之前太暗）
-  wolf: [0.65, 0.78, 0.95], // 明亮冷蓝
-  deer: [0.92, 0.92, 0.85], // 明亮米白
+  cat: [1.0, 0.85, 0.68],
+  wolf: [0.65, 0.78, 0.95],
+  deer: [0.92, 0.92, 0.85],
 }
 
 interface Props {
@@ -36,9 +42,8 @@ export function AnimalCharacter({ animal, count, position = [0, 0, 0], scale = 1
   const pointsRef = useRef<THREE.Points | null>(null)
   const velocities = useRef<Float32Array | null>(null)
   const origins = useRef<Float32Array | null>(null)
-  const ripples = useRef(new RippleManager(RIPPLE_NDC))
+  const ripples = useRef(new RippleManager(RIPPLE_WORLD))
 
-  // 加载 char-sketch → 采样位置 + 着色
   useEffect(() => {
     const img = new Image()
     img.crossOrigin = 'anonymous'
@@ -55,12 +60,11 @@ export function AnimalCharacter({ animal, count, position = [0, 0, 0], scale = 1
       const sizes = new Float32Array(n)
       const [r, g, b] = PALETTES[animal]
       for (let i = 0; i < n; i++) {
-        // 微随机化亮度 + 色相，避免完全单色
         const jitter = 0.85 + Math.random() * 0.15
         colors[i * 3] = Math.min(1, r * jitter)
         colors[i * 3 + 1] = Math.min(1, g * jitter)
         colors[i * 3 + 2] = Math.min(1, b * jitter)
-        sizes[i] = 1.0 + Math.random() * 1.8
+        sizes[i] = 1.2 + Math.random() * 1.8
       }
       origins.current = new Float32Array(positions)
       velocities.current = new Float32Array(positions.length)
@@ -69,23 +73,31 @@ export function AnimalCharacter({ animal, count, position = [0, 0, 0], scale = 1
     img.src = `/assets/${animal}/char-sketch.png`
   }, [animal, count])
 
-  // 鼠标 ripple 触发器（global pointermove，转换为 local NDC）
+  // 鼠标 ripple — NDC → 世界坐标的正确转换
   useEffect(() => {
     const handler = (e: PointerEvent) => {
-      const x = (e.clientX / window.innerWidth) * 2 - 1
-      const y = -(e.clientY / window.innerHeight) * 2 + 1
-      // 减去 group 位置（粗略，scale 假设 1）
-      const localX = x - position[0]
-      const localY = y - position[1]
+      const W = window.innerWidth
+      const H = window.innerHeight
+      const aspect = W / H
+      const worldHalfH = HALF_TAN * CAM_Z
+      const worldHalfW = worldHalfH * aspect
+
+      const ndcX = (e.clientX / W) * 2 - 1
+      const ndcY = -(e.clientY / H) * 2 + 1
+      const wx = ndcX * worldHalfW   // 世界 X
+      const wy = ndcY * worldHalfH   // 世界 Y
+
+      // 转 group local（粒子在 group local 空间里）
+      const localX = (wx - position[0]) / scale
+      const localY = (wy - position[1]) / scale
       ripples.current.spawn(localX, localY, performance.now())
     }
     window.addEventListener('pointermove', handler)
     return () => window.removeEventListener('pointermove', handler)
-  }, [position])
+  }, [position, scale])
 
-  // 抓 points ref（ParticleField 内部的 mesh）
   useEffect(() => {
-    if (groupRef.current) {
+    if (groupRef.current && data) {
       pointsRef.current = groupRef.current.children[0] as THREE.Points
     }
   }, [data])
@@ -94,21 +106,28 @@ export function AnimalCharacter({ animal, count, position = [0, 0, 0], scale = 1
     if (!groupRef.current || !data || !velocities.current || !origins.current) return
     const t = state.clock.elapsedTime
 
-    // 呼吸：明显但不浮夸（1.5% 缩放）
-    const breathe = 1 + Math.sin(t * 0.45) * 0.015
+    // 呼吸：3% 缩放（明显但不浮夸）
+    const breathe = 1 + Math.sin(t * 0.5) * 0.03
     groupRef.current.scale.setScalar(scale * breathe)
 
-    // ripple 物理
     const now = performance.now()
     ripples.current.tick(now)
     const active = ripples.current.getRipples()
 
-    if (active.length === 0 && velocities.current.every((v) => Math.abs(v) < 1e-5)) {
-      return // 无 ripple、无残余 velocity 时跳过 update
+    // 总有 spring-back 残余 velocity 时也要 update
+    let hasMotion = active.length > 0
+    if (!hasMotion) {
+      for (let i = 0; i < velocities.current.length; i++) {
+        if (Math.abs(velocities.current[i]) > 1e-4) {
+          hasMotion = true
+          break
+        }
+      }
     }
+    if (!hasMotion) return
 
-    const SPRING = 0.06
-    const DAMP = 0.85
+    const SPRING = 0.08
+    const DAMP = 0.84
     const positions = data.positions
 
     for (let i = 0; i < positions.length; i += 3) {
@@ -124,7 +143,7 @@ export function AnimalCharacter({ animal, count, position = [0, 0, 0], scale = 1
           particleY: py,
           ripple: active[k],
           currentTime: now,
-          params: RIPPLE_NDC,
+          params: RIPPLE_WORLD,
         })
         fx += force.x
         fy += force.y
