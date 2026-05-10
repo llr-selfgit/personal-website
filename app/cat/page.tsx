@@ -18,9 +18,21 @@ export default function CatHubPage() {
 
   return (
     <>
+      {/* 全屏背景画 + sepia 渐变 overlay 让文字仍可读 */}
+      <div
+        className="fixed inset-0 -z-20"
+        style={{
+          backgroundImage: 'linear-gradient(rgba(42, 31, 21, 0.65), rgba(42, 31, 21, 0.78)), url(/assets/cat/bg-hub.png)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+        aria-hidden
+      />
+
+      {/* 粒子角色 canvas，z-index -10 在 bg 之上、内容之下 */}
       <HubScene animal="cat" />
 
-      <div className="min-h-screen bg-cat-bg/95 text-cat-body relative">
+      <div className="min-h-screen text-cat-body relative">
         <TopBar animal="cat" />
 
         {/* Hero — 慵懒长滚，留白大 */}
@@ -30,14 +42,16 @@ export default function CatHubPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1.2, ease: 'easeOut' }}
             className="font-cat-zh text-4xl md:text-5xl text-cat-heading font-semibold mb-6 tracking-wide"
+            style={{ textShadow: '0 2px 12px rgba(0,0,0,0.5)' }}
           >
             {voice.greeting}
           </motion.h1>
           <motion.p
             initial={{ opacity: 0 }}
-            animate={{ opacity: 0.7 }}
+            animate={{ opacity: 0.75 }}
             transition={{ duration: 1.5, delay: 0.6 }}
             className="font-cat-en italic text-cat-highlight text-lg"
+            style={{ textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}
           >
             — find a corner that suits you —
           </motion.p>
@@ -51,6 +65,7 @@ export default function CatHubPage() {
             viewport={{ once: true, margin: '-15%' }}
             transition={{ duration: 1.4, ease: 'easeOut' }}
             className="font-cat-zh text-lg leading-[1.85] space-y-7 text-cat-body"
+            style={{ textShadow: '0 2px 8px rgba(0,0,0,0.7)' }}
           >
             <About />
           </motion.div>
