@@ -1,5 +1,10 @@
 # 个人网站 v1 实施计划
 
+> **Day 1 进度** (2026-05-10 实施):
+> - ✅ Task 1 完成 — repo + clone + assets + first push (commit 68f7ae7)
+> - ⏳ Task 2 进行中 — Next.js scaffolding
+
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 实施"三动物粒子美学"个人网站 v1（猫 / 狼 / 鹿），2-3 周内通过 Claude Code Agent Teams 并行上线。
@@ -122,7 +127,7 @@ personal-website/
 
 **Files:**
 - Create: 远程 GitHub repo `personal-website`（用户提前手动创建私有 repo）
-- Create: 本地工作区 `~/projects/personal-website/`（建议路径，避免和 ~/.claude_code_workspace 混）
+- Create: 本地工作区 `~/claude_code_workspace/projects/personal-website/`（建议路径，避免和 ~/.claude_code_workspace 混）
 
 - [ ] **Step 1: 用户手动创建 GitHub 私有 repo**
 
@@ -134,7 +139,7 @@ personal-website/
 - [ ] **Step 2: 本地 git clone**
 
 ```bash
-mkdir -p ~/projects && cd ~/projects
+cd ~/claude_code_workspace/projects
 git clone git@github.com:<your-username>/personal-website.git
 cd personal-website
 ```
@@ -199,7 +204,7 @@ Expected: push 成功，远程 main 分支有上面提交。
 - [ ] **Step 1: 初始化 Next.js 项目（合并到现有目录）**
 
 ```bash
-cd ~/projects/personal-website
+cd ~/claude_code_workspace/projects/personal-website
 npx create-next-app@latest . --typescript --tailwind --app --src-dir false --import-alias "@/*" --no-eslint --no-turbopack
 ```
 
@@ -312,6 +317,7 @@ git push origin main
 - 选择 `personal-website` repo（如果没看到，点 "Adjust GitHub App Permissions" 授权访问该 repo）
 - 框架 Preset 自动检测为 Next.js
 - Root Directory: `./`（默认）
+- **Project Name: 改成 `llr-ego-mirror-maze`**（不要用默认的 `personal-website`）→ Vercel URL 会变成 `llr-ego-mirror-maze.vercel.app`
 - 不需要环境变量（暂时）
 - Click "Deploy"
 
@@ -1477,7 +1483,7 @@ Agent(
   name="infra-engineer",
   prompt="""你是 personal-website 项目 team 的 infra-engineer。
 
-  项目根目录: ~/projects/personal-website
+  项目根目录: ~/claude_code_workspace/projects/personal-website
   Spec: docs/superpowers/specs/2026-05-10-personal-website-design.md
   Plan: docs/superpowers/plans/2026-05-10-personal-website-implementation.md
 
@@ -1498,7 +1504,7 @@ Agent(
   name="cat-builder",
   prompt="""你是 cat hub builder。负责实施猫 hub 的 D 级 persona。
 
-  根目录: ~/projects/personal-website
+  根目录: ~/claude_code_workspace/projects/personal-website
   Spec § 6 / 猫 persona section
   Plan: Task 15 (Cat HubScene) + Task 16 (Cat about-me) + Task 17 (Cat 装饰)
 
@@ -1537,7 +1543,7 @@ TaskCreate(subject="Deer HubScene 完整实施", description="...", owner="deer-
 每天结束运行：
 
 ```bash
-cd ~/projects/personal-website
+cd ~/claude_code_workspace/projects/personal-website
 git log --all --graph --decorate --oneline -20
 ```
 
