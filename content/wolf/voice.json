@@ -1,0 +1,11 @@
+{
+  "greeting": "进来",
+  "subgreeting": "别站门口",
+  "leaveMessage": "你想留下你的气味吗？",
+  "loading": "稍等",
+  "notFound": "这条路不在地图上",
+  "essaysLink": "看我写的东西",
+  "toysLink": "看我做的东西",
+  "contactLabel": "需要联系，往这走",
+  "switchAnimal": "换一只"
+}

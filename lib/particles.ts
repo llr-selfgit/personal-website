@@ -1,3 +1,5 @@
+import type { DeviceTier, ParticleConfig } from './types'
+
 /**
  * Sample N particle positions from PNG alpha channel.
  * Returns Float32Array of [x, y, z, ...] in NDC-ish coordinates.
@@ -21,7 +23,7 @@ export function samplePositionsFromAlpha(
     const alpha = img.data[idx + 3]
     if (alpha > 30 && Math.random() < alpha / 255) {
       const nx = ((x / dW) * 2 - 1) * aspect
-      const ny = -((y / dH) * 2 - 1) // flip Y for WebGL
+      const ny = -((y / dH) * 2 - 1)
       out.push(nx, ny, 0)
     }
   }
@@ -29,14 +31,13 @@ export function samplePositionsFromAlpha(
   return new Float32Array(out)
 }
 
-/** Pixel coordinate → NDC range mapping. */
 export function normalizeToRange(pixel: number, total: number, aspect: number): number {
   return (pixel / total - 0.5) * 2 * aspect
 }
 
 /** Particle counts per device tier (spec § 7 / § 10). */
-export const PARTICLE_COUNTS = {
+export const PARTICLE_COUNTS: Record<DeviceTier, ParticleConfig> = {
   high: { hubCharacter: 80000, hubAmbient: 5000, entryHover: 70000, entryIdle: 4000 },
   mid: { hubCharacter: 50000, hubAmbient: 3000, entryHover: 40000, entryIdle: 2000 },
   low: { hubCharacter: 15000, hubAmbient: 800, entryHover: 8000, entryIdle: 500 },
-} as const
+}
