@@ -177,7 +177,9 @@ sessionStorage.removeItem('skipIntro')
 粒子 alpha 在 vertex shader 里乘 `uIntroAlpha` uniform：
 
 - t ∈ [0, 0.3s]：α = 0.15（雾态）
-- t ∈ [0.3s, duration]：α = lerp(0.15, 1.0, easeOutCubic((t - 0.3) / (duration - 0.3)))
+- t ∈ [0.3s, duration]：α = lerp(0.15, 1.0, easeOutQuart((t - 0.3) / (duration - 0.3)))
+
+> 用同一个 easeOutQuart 与位置 lerp 一致，简化实现。视觉差异肉眼不可见。
 
 文字 quote / 便签 / TopBar / nav 共享同一 `introTextAlpha`：
 
