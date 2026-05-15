@@ -3,7 +3,7 @@ export const catBio = {
   tagline: 'notes from a quiet corner',
   role: '坚信着迷雾中的清亮',
   body: [
-    '我做一些工具，记一些想法。',
+    '偶尔起墨着笔，偶尔糊涂钻研，偶尔定格真实。',
     '更多时候，零碎的想法在脑海里漂泊，等待靠岸。',
   ],
   links: [
