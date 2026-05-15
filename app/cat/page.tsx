@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { initStoreBrowser, useSiteStore } from '@/lib/store'
 import { HubScene } from '@/components/canvas/scenes/HubScene'
@@ -10,11 +10,19 @@ import About from '@/content/cat/about.mdx'
 
 export default function CatHubPage() {
   const setAnimal = useSiteStore((s) => s.setAnimal)
+  const skipIntroOnNextHub = useSiteStore((s) => s.skipIntroOnNextHub)
+  const setSkipIntroOnNextHub = useSiteStore((s) => s.setSkipIntroOnNextHub)
+  const [skipThisIntro, setSkipThisIntro] = useState(false)
 
   useEffect(() => {
     initStoreBrowser()
     setAnimal('cat')
-  }, [setAnimal])
+    // Snapshot + clear the flag on mount so navigation cycle is one-shot
+    if (skipIntroOnNextHub) {
+      setSkipThisIntro(true)
+      setSkipIntroOnNextHub(false)
+    }
+  }, [setAnimal, skipIntroOnNextHub, setSkipIntroOnNextHub])
 
   return (
     <>
@@ -30,7 +38,7 @@ export default function CatHubPage() {
       />
 
       {/* 粒子角色 canvas，z-index -10 在 bg 之上、内容之下 */}
-      <HubScene animal="cat" />
+      <HubScene animal="cat" skipIntro={skipThisIntro} />
 
       <div className="min-h-screen text-cat-body relative">
         <TopBar animal="cat" />

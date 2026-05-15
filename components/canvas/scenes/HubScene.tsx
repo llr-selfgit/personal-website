@@ -7,13 +7,14 @@ import type { Animal } from '@/lib/types'
 
 interface Props {
   animal: Animal
+  skipIntro?: boolean
 }
 
 /**
  * Hub canvas: 全屏背景画 + 粒子角色。
  * 不直接做布局，layout 用 CSS 在 page.tsx 里安排。
  */
-export function HubScene({ animal }: Props) {
+export function HubScene({ animal, skipIntro }: Props) {
   const reduceMotion = useSiteStore((s) => s.reduceMotion)
   const counts = useSiteStore((s) => s.getParticleCounts())
 
@@ -28,6 +29,7 @@ export function HubScene({ animal }: Props) {
         count={charCount}
         position={animal === 'cat' ? [1.0, -1.7, 0] : animal === 'wolf' ? [1.5, 0.3, 0] : [1.6, -0.2, 0]}
         scale={1.2}
+        skipIntro={skipIntro}
       />
     </PersistentCanvas>
   )
