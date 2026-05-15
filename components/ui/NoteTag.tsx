@@ -22,6 +22,18 @@ export function NoteTag({ animal, bio, textAlpha }: Props) {
 
   return (
     <div
+      tabIndex={-1}
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+      onFocus={() => setOpen(true)}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+          setOpen(false)
+        }
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') setOpen(false)
+      }}
       style={{
         position: 'fixed',
         left: '32px',
@@ -30,14 +42,11 @@ export function NoteTag({ animal, bio, textAlpha }: Props) {
         zIndex: 30,
         pointerEvents: textAlpha > 0.5 ? 'auto' : 'none',
         transition: 'opacity 250ms ease-out',
+        outline: 'none',
       }}
     >
       <button
         type="button"
-        onMouseEnter={() => setOpen(true)}
-        onMouseLeave={() => setOpen(false)}
-        onFocus={() => setOpen(true)}
-        onBlur={() => setOpen(false)}
         aria-expanded={open}
         aria-label={`关于 ${bio.name}`}
         style={{
@@ -61,7 +70,6 @@ export function NoteTag({ animal, bio, textAlpha }: Props) {
       </button>
 
       <div
-        role="region"
         aria-hidden={!open}
         style={{
           position: 'absolute',
