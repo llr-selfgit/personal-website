@@ -33,7 +33,7 @@ export function QuoteHero({ animal, quotes, textAlpha }: Props) {
   const q = quotes[index]
 
   return (
-    <section style={{ opacity: textAlpha, transition: 'opacity 350ms ease-out', maxWidth: '36rem' }} className="px-8 pt-40 pb-32">
+    <section style={{ opacity: textAlpha, transition: 'opacity 350ms ease-out' }} className="px-8 pt-40 pb-32 max-w-2xl mx-auto">
       <blockquote
         className={FONT_CLASS[animal]}
         style={{
