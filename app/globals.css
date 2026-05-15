@@ -27,36 +27,69 @@ body {
 }
 
 /* Hub decoration ambient animations */
-@keyframes drift-y-slow {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-7px); }
+
+/* Teacup steam — three wisps with different paths, sizes, and timing.
+   Each wisp slightly drifts horizontally as it rises (organic wandering). */
+@keyframes steam-wisp-a {
+  0%   { transform: translate(0, 0) scale(0.75); opacity: 0; }
+  18%  { opacity: 0.5; }
+  40%  { transform: translate(-4px, -12px) scale(0.9); }
+  70%  { transform: translate(2px, -24px) scale(1.05); opacity: 0.35; }
+  100% { transform: translate(-2px, -38px) scale(1.2); opacity: 0; }
 }
-@keyframes drift-y-tiny {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-3px); }
+@keyframes steam-wisp-b {
+  0%   { transform: translate(0, 0) scale(0.65); opacity: 0; }
+  22%  { opacity: 0.45; }
+  45%  { transform: translate(5px, -13px) scale(0.85); }
+  72%  { transform: translate(-3px, -25px) scale(1.0); opacity: 0.3; }
+  100% { transform: translate(3px, -40px) scale(1.15); opacity: 0; }
 }
-@keyframes sway {
-  0%, 100% { transform: rotate(-1.2deg); }
-  50% { transform: rotate(1.2deg); }
-}
-@keyframes rotate-slow {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-@keyframes steam-rise {
-  0% { transform: translateY(0) scale(0.85); opacity: 0; }
-  20% { opacity: 0.55; }
-  100% { transform: translateY(-32px) scale(1.15); opacity: 0; }
+@keyframes steam-wisp-c {
+  0%   { transform: translate(0, 0) scale(0.7); opacity: 0; }
+  20%  { opacity: 0.5; }
+  50%  { transform: translate(0, -16px) scale(0.95); }
+  100% { transform: translate(4px, -42px) scale(1.1); opacity: 0; }
 }
 
-.deco-drift-slow { animation: drift-y-slow 7s ease-in-out infinite; }
-.deco-drift-tiny { animation: drift-y-tiny 4s ease-in-out infinite; }
-.deco-sway       { animation: sway 5.5s ease-in-out infinite; }
-.deco-rotate     { animation: rotate-slow 22s linear infinite; }
-.deco-steam      { animation: steam-rise 4.2s ease-out infinite; }
+/* Book page flip — a small page-shaped overlay that rises and falls. */
+@keyframes book-page-flip {
+  /* Idle for most of the cycle, then a brief flip up and back. */
+  0%, 65%, 100% {
+    transform: perspective(160px) rotateX(0deg);
+    opacity: 0;
+  }
+  68%  { opacity: 0.55; }
+  78%  { transform: perspective(160px) rotateX(-95deg); }
+  85%  { transform: perspective(160px) rotateX(-70deg); }
+  92%  { transform: perspective(160px) rotateX(-20deg); opacity: 0.5; }
+  98%  { transform: perspective(160px) rotateX(0deg); opacity: 0; }
+}
+
+/* Yarn ball rolls left, then back. */
+@keyframes yarn-ball-roll {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  50%      { transform: translateX(-160px) rotate(-1080deg); }
+}
+/* Yarn line stretches in lockstep with the ball position. */
+@keyframes yarn-line-stretch {
+  0%, 100% { width: 0; opacity: 0; }
+  15%      { opacity: 0.4; }
+  50%      { width: 160px; opacity: 0.45; }
+  85%      { opacity: 0.4; }
+}
+
+.deco-steam-a    { animation: steam-wisp-a 4.5s ease-out infinite; }
+.deco-steam-b    { animation: steam-wisp-b 5.2s ease-out infinite 0.9s; }
+.deco-steam-c    { animation: steam-wisp-c 4.8s ease-out infinite 2.0s; }
+.deco-page-flip  { animation: book-page-flip 11s ease-in-out infinite; }
+.deco-yarn-ball  { animation: yarn-ball-roll 13s ease-in-out infinite; }
+.deco-yarn-line  { animation: yarn-line-stretch 13s ease-in-out infinite; }
 
 @media (prefers-reduced-motion: reduce) {
-  .deco-drift-slow, .deco-drift-tiny, .deco-sway, .deco-rotate, .deco-steam {
+  .deco-steam-a, .deco-steam-b, .deco-steam-c,
+  .deco-page-flip,
+  .deco-yarn-ball, .deco-yarn-line {
     animation: none;
   }
+  .deco-yarn-line { opacity: 0.3; width: 80px; }
 }
