@@ -6,6 +6,8 @@ import * as THREE from 'three'
 import { ParticleField } from './ParticleField'
 import { samplePositionsFromAlpha } from '@/lib/particles'
 import { RippleManager, computeRippleForce, DEFAULT_RIPPLE_PARAMS } from '@/lib/ripple'
+import { useIntroAnimation, INTRO_SIGMA } from '@/lib/intro-animation'
+import { useSiteStore } from '@/lib/store'
 import type { Animal } from '@/lib/types'
 
 // 摄像机参数（next.config 里 PersistentCanvas 设的 fov=50, position.z=5）
@@ -34,15 +36,21 @@ interface Props {
   count: number
   position?: [number, number, number]
   scale?: number
+  /** When true, skip intro animation (e.g., returning from sub-page) */
+  skipIntro?: boolean
 }
 
-export function AnimalCharacter({ animal, count, position = [0, 0, 0], scale = 1 }: Props) {
+export function AnimalCharacter({ animal, count, position = [0, 0, 0], scale = 1, skipIntro }: Props) {
   const [data, setData] = useState<{ positions: Float32Array; colors: Float32Array; sizes: Float32Array } | null>(null)
   const groupRef = useRef<THREE.Group>(null!)
   const pointsRef = useRef<THREE.Points | null>(null)
   const velocities = useRef<Float32Array | null>(null)
   const origins = useRef<Float32Array | null>(null)
+  const introStarts = useRef<Float32Array | null>(null)
   const ripples = useRef(new RippleManager(RIPPLE_WORLD))
+
+  const reduceMotion = useSiteStore((s) => s.reduceMotion)
+  const intro = useIntroAnimation({ animal, skip: skipIntro || reduceMotion })
 
   useEffect(() => {
     const img = new Image()
@@ -66,9 +74,20 @@ export function AnimalCharacter({ animal, count, position = [0, 0, 0], scale = 1
         colors[i * 3 + 2] = Math.min(1, b * jitter)
         sizes[i] = 1.2 + Math.random() * 1.8
       }
-      origins.current = new Float32Array(positions)
+      const jittered = new Float32Array(positions.length)
+      for (let i = 0; i < positions.length; i += 3) {
+        // Gaussian-ish via 6-uniform sum (cheap)
+        const g = (Math.random() + Math.random() + Math.random() + Math.random() + Math.random() + Math.random() - 3) / 1.7
+        const g2 = (Math.random() + Math.random() + Math.random() + Math.random() + Math.random() + Math.random() - 3) / 1.7
+        jittered[i] = positions[i] + g * INTRO_SIGMA
+        jittered[i + 1] = positions[i + 1] + g2 * INTRO_SIGMA
+        jittered[i + 2] = positions[i + 2] // depth unchanged
+      }
+      const initialPositions = (skipIntro || reduceMotion) ? positions : new Float32Array(jittered)
+      origins.current = new Float32Array(positions) // origins are the TARGET (final)
+      introStarts.current = jittered
       velocities.current = new Float32Array(positions.length)
-      setData({ positions, colors, sizes })
+      setData({ positions: initialPositions, colors, sizes })
     }
     img.src = `/assets/${animal}/char-sketch.png`
   }, [animal, count])
@@ -109,6 +128,19 @@ export function AnimalCharacter({ animal, count, position = [0, 0, 0], scale = 1
     // 呼吸：3% 缩放（明显但不浮夸）
     const breathe = 1 + Math.sin(t * 1.8) * 0.03
     groupRef.current.scale.setScalar(scale * breathe)
+
+    // Intro animation: lerp positions from introStarts toward origins
+    if (!intro.done && origins.current && introStarts.current && data) {
+      const p = intro.particleProgress
+      for (let i = 0; i < data.positions.length; i++) {
+        data.positions[i] = introStarts.current[i] + (origins.current[i] - introStarts.current[i]) * p
+      }
+      if (pointsRef.current?.geometry.attributes.position) {
+        ;(pointsRef.current.geometry.attributes.position as THREE.BufferAttribute).needsUpdate = true
+      }
+      // While intro is running, skip ripple/spring (positions are driven entirely by intro)
+      return
+    }
 
     const now = performance.now()
     ripples.current.tick(now)
@@ -165,7 +197,12 @@ export function AnimalCharacter({ animal, count, position = [0, 0, 0], scale = 1
 
   return (
     <group ref={groupRef} position={position} scale={scale}>
-      <ParticleField positions={data.positions} colors={data.colors} sizes={data.sizes} />
+      <ParticleField
+        positions={data.positions}
+        colors={data.colors}
+        sizes={data.sizes}
+        introAlpha={intro.particleAlpha}
+      />
     </group>
   )
 }
