@@ -21,8 +21,13 @@ describe('QuoteHero', () => {
   })
 
   it('includes translator when present', () => {
-    vi.spyOn(Math, 'random').mockReturnValue(0)
     render(<QuoteHero animal="cat" quotes={quotes} textAlpha={1} />)
     expect(screen.getByText(/刘振瀛/)).toBeInTheDocument()
+  })
+
+  it('applies textAlpha to section opacity', () => {
+    const { container } = render(<QuoteHero animal="cat" quotes={quotes} textAlpha={0.4} />)
+    const section = container.querySelector('section')
+    expect(section).toHaveStyle({ opacity: '0.4' })
   })
 })

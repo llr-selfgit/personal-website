@@ -16,6 +16,12 @@ interface Props {
   textAlpha: number
 }
 
+const FONT_CLASS: Record<Animal, string> = {
+  cat: 'font-cat-zh',
+  wolf: 'font-wolf-en',
+  deer: 'font-cat-zh',
+}
+
 export function QuoteHero({ animal, quotes, textAlpha }: Props) {
   const [index, setIndex] = useState<number>(() => Math.floor(Math.random() * quotes.length))
 
@@ -29,7 +35,7 @@ export function QuoteHero({ animal, quotes, textAlpha }: Props) {
   return (
     <section style={{ opacity: textAlpha, transition: 'opacity 350ms ease-out', maxWidth: '36rem' }} className="px-8 pt-40 pb-32">
       <blockquote
-        className={animal === 'wolf' ? 'font-wolf-en' : 'font-cat-zh'}
+        className={FONT_CLASS[animal]}
         style={{
           fontSize: 'clamp(1.4rem, 2.5vw, 2rem)',
           lineHeight: 1.55,
