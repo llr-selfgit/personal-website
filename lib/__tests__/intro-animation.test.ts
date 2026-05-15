@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { easeOutQuart, computeAlpha, INTRO_DURATIONS } from '../intro-animation'
+import { renderHook } from '@testing-library/react'
+import { easeOutQuart, computeAlpha, INTRO_DURATIONS, useIntroAnimation } from '../intro-animation'
 
 describe('easeOutQuart', () => {
   it('returns 0 at t=0', () => {
@@ -41,5 +42,27 @@ describe('computeAlpha', () => {
   })
   it('text alpha at end = 1', () => {
     expect(computeAlpha({ elapsed: duration, duration, fadeStart, target: 'text' })).toBeCloseTo(1)
+  })
+})
+
+describe('useIntroAnimation hook', () => {
+  it('returns final state immediately when skip=true', () => {
+    const { result } = renderHook(() => useIntroAnimation({ animal: 'cat', skip: true }))
+    expect(result.current.done).toBe(true)
+    expect(result.current.particleProgress).toBe(1)
+    expect(result.current.particleAlpha).toBe(1)
+    expect(result.current.textAlpha).toBe(1)
+  })
+
+  it('snaps to final state when skip transitions false → true', () => {
+    const { result, rerender } = renderHook(
+      ({ skip }) => useIntroAnimation({ animal: 'cat', skip }),
+      { initialProps: { skip: false } }
+    )
+    expect(result.current.done).toBe(false)
+    rerender({ skip: true })
+    expect(result.current.done).toBe(true)
+    expect(result.current.particleAlpha).toBe(1)
+    expect(result.current.textAlpha).toBe(1)
   })
 })

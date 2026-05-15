@@ -67,7 +67,14 @@ export function useIntroAnimation({ animal, skip }: UseIntroAnimationInput): Int
   )
 
   useEffect(() => {
+    if (skip) {
+      setState({ particleProgress: 1, particleAlpha: 1, textAlpha: 1, done: true })
+    }
+  }, [skip])
+
+  useEffect(() => {
     if (skip) return
+    start.current = null
     let raf = 0
     const tick = (now: number) => {
       if (start.current === null) start.current = now
