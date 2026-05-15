@@ -97,8 +97,7 @@ export function NoteTag({ animal, bio, textAlpha }: Props) {
             <div key={i}>{line}</div>
           ))}
         </div>
-        <div style={{ fontSize: '11px', marginTop: '14px', opacity: 0.55 }}>{bio.location}</div>
-        <div style={{ fontSize: '11px', marginTop: '6px' }}>
+        <div style={{ fontSize: '11px', marginTop: '14px' }}>
           {bio.links.map((l, i) => (
             <span key={l.label}>
               {i > 0 && ' · '}
