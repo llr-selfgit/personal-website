@@ -5,9 +5,9 @@ import type { Animal } from '@/lib/types'
 import type { Bio } from '@/content/cat/bio'
 
 const PALETTES: Record<Animal, { paper: string; ink: string; accent: string }> = {
-  cat:  { paper: 'rgba(244, 230, 200, 0.42)', ink: '#2a1a08', accent: '#b89868' },
-  wolf: { paper: 'rgba(216, 221, 228, 0.42)', ink: '#0e1620', accent: '#7a8b9c' },
-  deer: { paper: 'rgba(236, 232, 221, 0.42)', ink: '#2e2718', accent: '#a8957a' },
+  cat:  { paper: 'rgba(244, 230, 200, 0.30)', ink: '#1f1305', accent: '#b89868' },
+  wolf: { paper: 'rgba(216, 221, 228, 0.30)', ink: '#08101a', accent: '#7a8b9c' },
+  deer: { paper: 'rgba(236, 232, 221, 0.30)', ink: '#241d10', accent: '#a8957a' },
 }
 
 const FONT_ZH: Record<Animal, string> = {
