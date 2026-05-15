@@ -17,12 +17,15 @@ const HALF_TAN = Math.tan(FOV_RAD / 2)
 // 视口高度（世界单位）的一半 = tan(fov/2) * camera distance ≈ 2.33
 
 // World-space ripple params（particles 在 ~[-1,1] 局部空间）
+// 目标：慢慢一圈圈泛起涟漪散开 — 多 ring 共存、薄而长寿的波前、轻微推力
 const RIPPLE_WORLD = {
   ...DEFAULT_RIPPLE_PARAMS,
-  speed: 0.4,
-  maxRadius: 0.18,
-  bandThickness: 0.04,
-  pushStrength: 0.05,
+  speed: 0.18,         // 慢，波前可见地传播
+  maxRadius: 0.5,      // 每圈传播范围大一些
+  bandThickness: 0.07, // 厚一点的带，视觉上是"一圈"而不是一线
+  pushStrength: 0.018, // 很轻 — 不抢戏
+  spawnInterval: 70,   // 鼠标快移时频繁 spawn 新 ring
+  maxConcurrent: 8,    // 同屏多 ring 共存制造层叠
 }
 
 const PALETTES: Record<Animal, [number, number, number]> = {

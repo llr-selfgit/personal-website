@@ -59,20 +59,21 @@ export function LeaveMessage({ animal, voice, textAlpha = 1 }: Props) {
         transition: 'opacity 350ms ease-out',
         background: palette.panel,
         border: `1px solid ${palette.border}`,
-        borderRadius: '8px',
+        borderRadius: '6px',
         backdropFilter: 'blur(2px)',
         WebkitBackdropFilter: 'blur(2px)',
-        padding: '24px 28px',
+        padding: '16px 18px',
+        maxWidth: '360px',
       }}
       className="font-cat-zh"
     >
       <h3
         style={{
-          fontSize: '15px',
+          fontSize: '13px',
           color: palette.text,
-          opacity: 0.75,
-          marginBottom: '14px',
-          letterSpacing: '0.03em',
+          opacity: 0.7,
+          marginBottom: '10px',
+          letterSpacing: '0.02em',
         }}
       >
         {voice.leaveMessageHeading}
@@ -82,18 +83,18 @@ export function LeaveMessage({ animal, voice, textAlpha = 1 }: Props) {
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder={voice.leaveMessagePlaceholder}
-          rows={4}
+          rows={2}
           maxLength={2000}
           disabled={status === 'submitting' || status === 'success'}
           style={{
             width: '100%',
             background: 'rgba(0, 0, 0, 0.18)',
             border: `1px solid ${palette.border}`,
-            borderRadius: '6px',
+            borderRadius: '4px',
             color: palette.text,
-            padding: '12px 14px',
-            fontSize: '14px',
-            lineHeight: 1.7,
+            padding: '8px 10px',
+            fontSize: '13px',
+            lineHeight: 1.6,
             fontFamily: 'inherit',
             resize: 'vertical',
             outline: 'none',
@@ -107,13 +108,13 @@ export function LeaveMessage({ animal, voice, textAlpha = 1 }: Props) {
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            marginTop: '12px',
-            minHeight: '32px',
+            marginTop: '8px',
+            minHeight: '28px',
           }}
         >
           <span
             style={{
-              fontSize: '12px',
+              fontSize: '11px',
               color: palette.text,
               opacity: status === 'idle' ? 0 : 0.65,
               transition: 'opacity 250ms ease-out',
@@ -130,10 +131,10 @@ export function LeaveMessage({ animal, voice, textAlpha = 1 }: Props) {
             style={{
               background: 'transparent',
               border: `1px solid ${palette.accent}`,
-              borderRadius: '4px',
+              borderRadius: '3px',
               color: palette.accent,
-              padding: '7px 18px',
-              fontSize: '13px',
+              padding: '5px 14px',
+              fontSize: '12px',
               fontFamily: 'inherit',
               cursor: text.trim().length === 0 ? 'not-allowed' : 'pointer',
               opacity: text.trim().length === 0 ? 0.4 : 0.85,
