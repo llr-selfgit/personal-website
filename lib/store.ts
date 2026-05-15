@@ -20,6 +20,12 @@ interface SiteState {
   setSwitchAnimalOpen: (o: boolean) => void
   reset: () => void
   getParticleCounts: () => typeof PARTICLE_COUNTS.high
+  /** Set when navigating from a sub-page back to hub; consumed by hub to skip intro */
+  skipIntroOnNextHub: boolean
+  setSkipIntroOnNextHub: (skip: boolean) => void
+  /** Reserved for D path (entry triptych → hub continuation). null = no continuation, fall back to C. */
+  introState: null | { animal: Animal; sourcePositions: Float32Array }
+  setIntroState: (s: SiteState['introState']) => void
 }
 
 export const useSiteStore = create<SiteState>()(
@@ -42,6 +48,10 @@ export const useSiteStore = create<SiteState>()(
         switchAnimalOpen: false,
       }),
       getParticleCounts: () => PARTICLE_COUNTS[get().tier],
+      skipIntroOnNextHub: false,
+      setSkipIntroOnNextHub: (skip) => set({ skipIntroOnNextHub: skip }),
+      introState: null,
+      setIntroState: (s) => set({ introState: s }),
     }),
     {
       name: 'personal-website-state',
