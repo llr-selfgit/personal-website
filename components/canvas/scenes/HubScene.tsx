@@ -2,6 +2,7 @@
 
 import { PersistentCanvas } from '../PersistentCanvas'
 import { AnimalCharacter } from '../AnimalCharacter'
+import { YarnDecoration } from '../YarnDecoration'
 import { useSiteStore } from '@/lib/store'
 import type { Animal } from '@/lib/types'
 
@@ -21,6 +22,10 @@ export function HubScene({ animal, skipIntro }: Props) {
   // reduce-motion 时减少粒子，且禁用呼吸
   const charCount = reduceMotion ? Math.min(counts.hubCharacter / 4, 5000) : counts.hubCharacter
 
+  // Yarn ball decoration sits LEFT of the cat (cat is at [1.0, -1.7]).
+  // Spool anchor is the rest position (rightmost); ball rolls leftward.
+  const showYarn = animal === 'cat' && !reduceMotion
+
   return (
     <PersistentCanvas fixed>
       <ambientLight intensity={0.5} />
@@ -31,6 +36,17 @@ export function HubScene({ animal, skipIntro }: Props) {
         scale={1.2}
         skipIntro={skipIntro}
       />
+      {showYarn && (
+        <YarnDecoration
+          spool={[-0.2, -1.7, 0]}
+          travelX={1.0}
+          radius={0.18}
+          scale={0.18}
+          ballCount={15000}
+          strandCount={600}
+          periodSec={13}
+        />
+      )}
     </PersistentCanvas>
   )
 }

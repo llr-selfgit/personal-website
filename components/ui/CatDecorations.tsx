@@ -134,25 +134,14 @@ export function CatDecorations({ textAlpha = 1 }: Props) {
         />
       </div>
 
-      {/* ───── 毛线球 — SVG demo, physics-correct ───── */}
-      <div
-        style={{
-          position: 'absolute',
-          right: 'min(14vw, 280px)',
-          bottom: 'min(14vh, 150px)',
-          width: '280px',
-          height: '90px',
-          opacity: 0.85,
-        }}
-      >
-        <SVGYarn />
-      </div>
+      {/* 毛线球已迁移到 R3F canvas（YarnDecoration），见 HubScene。 */}
     </div>
   )
 }
 
 /**
- * Hand-coded SVG yarn ball + dynamic strand.
+ * Hand-coded SVG yarn ball + dynamic strand (no longer mounted; kept for
+ * reference if we revert from particle path back to SVG).
  *
  * Physics:
  *   - Ball rolls horizontally between spool (right) and end point (left)
