@@ -14,15 +14,19 @@ const VOICE_MAP = {
 
 interface Props {
   animal: Animal
+  textAlpha?: number
 }
 
-export function TopBar({ animal }: Props) {
+export function TopBar({ animal, textAlpha }: Props) {
   const { setSwitchAnimalOpen, setLeaveMessageOpen } = useSiteStore()
   const voice = VOICE_MAP[animal]
   const accentClass = animal === 'cat' ? 'text-cat-accent' : animal === 'wolf' ? 'text-wolf-accent' : 'text-deer-accent'
 
   return (
-    <header className="fixed top-0 right-0 z-20 p-4 flex items-center gap-2">
+    <header
+      className="fixed top-0 right-0 z-20 p-4 flex items-center gap-2"
+      style={{ opacity: textAlpha ?? 1, transition: 'opacity 350ms ease-out' }}
+    >
       <button
         onClick={() => setSwitchAnimalOpen(true)}
         className={`px-3 py-1.5 text-xs ${accentClass} hover:opacity-100 opacity-70 transition border border-current rounded`}
