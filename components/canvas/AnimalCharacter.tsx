@@ -19,10 +19,10 @@ const HALF_TAN = Math.tan(FOV_RAD / 2)
 // World-space ripple params（particles 在 ~[-1,1] 局部空间）
 const RIPPLE_WORLD = {
   ...DEFAULT_RIPPLE_PARAMS,
-  speed: 0.55,
-  maxRadius: 0.32,
-  bandThickness: 0.06,
-  pushStrength: 0.08,
+  speed: 0.4,
+  maxRadius: 0.18,
+  bandThickness: 0.04,
+  pushStrength: 0.05,
 }
 
 const PALETTES: Record<Animal, [number, number, number]> = {
@@ -126,7 +126,7 @@ export function AnimalCharacter({ animal, count, position = [0, 0, 0], scale = 1
     const t = state.clock.elapsedTime
 
     // 呼吸：3% 缩放（明显但不浮夸）
-    const breathe = 1 + Math.sin(t * 1.8) * 0.03
+    const breathe = 1 + Math.sin(t * 1.0) * 0.03
     groupRef.current.scale.setScalar(scale * breathe)
 
     // Intro animation: lerp positions from introStarts toward origins
