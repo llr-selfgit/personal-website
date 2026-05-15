@@ -1,5 +1,7 @@
 'use client'
 
+import { useEffect, useRef, useState } from 'react'
+
 /**
  * Cat hub decorative elements: 书堆 / 茶杯 / 毛线球.
  *
@@ -132,50 +134,137 @@ export function CatDecorations({ textAlpha = 1 }: Props) {
         />
       </div>
 
-      {/* ───── 毛线球 — ball rolls + line stretches ───── */}
-      {/* Container is wide enough for the rolling distance (~160px) plus
-          the ball's own width. Ball starts at the right (spool point) and
-          rolls left. Strand line extends from spool toward ball. */}
+      {/* ───── 毛线球 — SVG demo, physics-correct ───── */}
       <div
         style={{
           position: 'absolute',
-          right: 'min(18vw, 360px)',
-          bottom: 'min(15vh, 160px)',
-          width: '260px',
+          right: 'min(14vw, 280px)',
+          bottom: 'min(14vh, 150px)',
+          width: '280px',
           height: '90px',
-          filter: 'sepia(0.3) brightness(0.95)',
-          opacity: 0.82,
+          opacity: 0.85,
         }}
       >
-        {/* Yarn strand — a thin line anchored to the right (spool point).
-            Width grows/shrinks via keyframe to track the ball position. */}
-        <div
-          className="deco-yarn-line"
-          style={{
-            position: 'absolute',
-            right: '40px', // start slightly inside the spool point (ball's center at rest)
-            bottom: '28px', // roughly the ball's vertical center
-            height: '1.2px',
-            background: `linear-gradient(to left, ${INK_LINE} 0%, ${INK_LINE} 70%, rgba(58,38,18,0) 100%)`,
-          }}
-        />
-        {/* Yarn ball — rolls horizontally; rotation locked to translation
-            so it visually rolls, not floats. */}
-        <img
-          className="deco-yarn-ball"
-          src="/assets/cat/decorations/deco-cat-yarn.png"
-          alt=""
-          style={{
-            position: 'absolute',
-            right: 0,
-            bottom: 0,
-            width: 'clamp(56px, 6vw, 80px)',
-            height: 'auto',
-            display: 'block',
-          }}
-          draggable={false}
-        />
+        <SVGYarn />
       </div>
     </div>
+  )
+}
+
+/**
+ * Hand-coded SVG yarn ball + dynamic strand.
+ *
+ * Physics:
+ *   - Ball rolls horizontally between spool (right) and end point (left)
+ *     in a 13-second sine cycle.
+ *   - Strand path origin is the spool anchor; its endpoint is the ball
+ *     center. Recomputed every frame, so the strand truly grows / shrinks
+ *     with the ball's position (not a faked CSS width animation).
+ *   - Ball rotation = (distance from spool / ball circumference) × 360°,
+ *     so a full revolution matches one ball-diameter of travel.
+ *   - The strand path has a slight downward sag toward the middle of its
+ *     length (gravity-like droop that follows the line's length).
+ */
+function SVGYarn() {
+  const RADIUS = 22
+  const SPOOL_X = 240
+  const SPOOL_Y = 50
+  const BALL_END_X = 60
+  const TRAVEL = SPOOL_X - BALL_END_X
+  const CIRCUMFERENCE = 2 * Math.PI * RADIUS
+  const PERIOD_MS = 13000
+
+  const [phase, setPhase] = useState(0) // 0..1
+  const startRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    let raf = 0
+    const tick = (now: number) => {
+      if (startRef.current === null) startRef.current = now
+      const t = ((now - startRef.current) % PERIOD_MS) / PERIOD_MS
+      setPhase(t)
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [])
+
+  // Smooth ease: cos curve so the ball decelerates at each end
+  const u = (1 - Math.cos(phase * 2 * Math.PI)) / 2 // 0..1..0 over the period
+  const ballX = SPOOL_X - u * TRAVEL
+  const distanceTravelled = u * TRAVEL
+  const rotation = -(distanceTravelled / CIRCUMFERENCE) * 360
+
+  // Strand path: a quadratic curve from spool to ball center with a slight
+  // downward sag proportional to its length (longer line = more droop).
+  const strandLength = SPOOL_X - ballX
+  const sag = Math.min(strandLength * 0.06, 6)
+  const midX = (SPOOL_X + ballX) / 2
+  const midY = SPOOL_Y + sag
+  const strandD = `M ${SPOOL_X} ${SPOOL_Y} Q ${midX} ${midY} ${ballX} ${SPOOL_Y}`
+
+  return (
+    <svg
+      viewBox="0 0 280 90"
+      width="100%"
+      height="100%"
+      style={{ overflow: 'visible' }}
+      aria-hidden
+    >
+      <defs>
+        <filter id="yarn-rough">
+          <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed="5" />
+          <feDisplacementMap in="SourceGraphic" scale="0.8" />
+        </filter>
+      </defs>
+
+      {/* Strand (drawn first so the ball overlaps the strand endpoint cleanly) */}
+      <path
+        d={strandD}
+        stroke="rgba(58, 38, 18, 0.6)"
+        strokeWidth="1.1"
+        strokeLinecap="round"
+        fill="none"
+        filter="url(#yarn-rough)"
+      />
+
+      {/* Spool anchor — a tiny stationary dot suggesting where the yarn is
+          attached (the painted scene's general direction). */}
+      <circle cx={SPOOL_X} cy={SPOOL_Y} r="1.2" fill="rgba(58, 38, 18, 0.5)" />
+
+      {/* Ball — circle outline + a wound-yarn spiral inside, all rotating
+          together with the ball. */}
+      <g
+        transform={`translate(${ballX} ${SPOOL_Y}) rotate(${rotation})`}
+        filter="url(#yarn-rough)"
+      >
+        <circle
+          r={RADIUS}
+          fill="rgba(232, 210, 170, 0.35)"
+          stroke="rgba(58, 38, 18, 0.6)"
+          strokeWidth="1.2"
+        />
+        {/* Yarn winding lines on the ball — several arcs at different angles
+            give the woven look. */}
+        <path
+          d="M -18 -6 Q -10 -16 4 -14 Q 16 -10 14 4 Q 10 16 -4 14 Q -16 10 -18 -6"
+          stroke="rgba(58, 38, 18, 0.45)"
+          strokeWidth="0.9"
+          fill="none"
+        />
+        <path
+          d="M -14 6 Q -4 -10 10 -6 Q 18 0 12 10 Q 2 16 -10 12 Q -18 6 -14 6"
+          stroke="rgba(58, 38, 18, 0.35)"
+          strokeWidth="0.8"
+          fill="none"
+        />
+        <path
+          d="M -8 -16 Q 6 -12 14 0 Q 10 14 -4 16 Q -16 10 -14 -4 Q -12 -14 -8 -16"
+          stroke="rgba(58, 38, 18, 0.3)"
+          strokeWidth="0.7"
+          fill="none"
+        />
+      </g>
+    </svg>
   )
 }
