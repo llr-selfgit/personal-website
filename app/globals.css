@@ -25,3 +25,38 @@ body {
   outline: 3px solid currentColor;
   outline-offset: 2px;
 }
+
+/* Hub decoration ambient animations */
+@keyframes drift-y-slow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+@keyframes drift-y-tiny {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+@keyframes sway {
+  0%, 100% { transform: rotate(-1.2deg); }
+  50% { transform: rotate(1.2deg); }
+}
+@keyframes rotate-slow {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+@keyframes steam-rise {
+  0% { transform: translateY(0) scale(0.85); opacity: 0; }
+  20% { opacity: 0.55; }
+  100% { transform: translateY(-32px) scale(1.15); opacity: 0; }
+}
+
+.deco-drift-slow { animation: drift-y-slow 7s ease-in-out infinite; }
+.deco-drift-tiny { animation: drift-y-tiny 4s ease-in-out infinite; }
+.deco-sway       { animation: sway 5.5s ease-in-out infinite; }
+.deco-rotate     { animation: rotate-slow 22s linear infinite; }
+.deco-steam      { animation: steam-rise 4.2s ease-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .deco-drift-slow, .deco-drift-tiny, .deco-sway, .deco-rotate, .deco-steam {
+    animation: none;
+  }
+}

@@ -7,6 +7,7 @@ import { TopBar } from '@/components/ui/TopBar'
 import { NoteTag } from '@/components/ui/NoteTag'
 import { QuoteHero } from '@/components/ui/QuoteHero'
 import { LeaveMessage } from '@/components/ui/LeaveMessage'
+import { CatDecorations } from '@/components/ui/CatDecorations'
 import { catBio } from '@/content/cat/bio'
 import quotes from '@/content/cat/quotes.json'
 import { useIntroAnimation } from '@/lib/intro-animation'
@@ -44,7 +45,10 @@ export default function CatHubPage() {
         aria-hidden
       />
 
-      {/* 粒子角色 canvas，z-index -10 在 bg 之上、内容之下 */}
+      {/* 装饰元素：书堆 / 茶杯 / 毛线球 - z-index -10，bg 之上、canvas 之下 */}
+      <CatDecorations textAlpha={intro.textAlpha} />
+
+      {/* 粒子角色 canvas，z-index -1 */}
       <HubScene animal="cat" skipIntro={skipThisIntro} />
 
       <div className="min-h-screen text-cat-body relative">
