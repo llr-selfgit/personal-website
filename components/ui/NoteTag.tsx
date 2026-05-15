@@ -4,10 +4,10 @@ import { useState } from 'react'
 import type { Animal } from '@/lib/types'
 import type { Bio } from '@/content/cat/bio'
 
-const PALETTES: Record<Animal, { paper: string; ink: string; accent: string }> = {
-  cat:  { paper: 'rgba(244, 230, 200, 0.18)', ink: '#160c02', accent: '#b89868' },
-  wolf: { paper: 'rgba(216, 221, 228, 0.18)', ink: '#040a14', accent: '#7a8b9c' },
-  deer: { paper: 'rgba(236, 232, 221, 0.18)', ink: '#1a160a', accent: '#a8957a' },
+const PALETTES: Record<Animal, { ink: string; muted: string; accent: string; expandedBg: string }> = {
+  cat:  { ink: '#e6d3a3', muted: '#c9a577', accent: '#b89868', expandedBg: 'rgba(20, 14, 6, 0.55)' },
+  wolf: { ink: '#cbd6e0', muted: '#a0b4c8', accent: '#7a8b9c', expandedBg: 'rgba(8, 16, 26, 0.55)' },
+  deer: { ink: '#ece8dd', muted: '#bfb39c', accent: '#a8957a', expandedBg: 'rgba(26, 22, 12, 0.55)' },
 }
 
 const FONT_ZH: Record<Animal, string> = {
@@ -20,6 +20,8 @@ const FONT_EN: Record<Animal, string> = {
   wolf: 'font-wolf-en',
   deer: 'font-deer-en',
 }
+
+const TEXT_SHADOW = '0 1px 2px rgba(0, 0, 0, 0.75)'
 
 interface Props {
   animal: Animal
@@ -47,8 +49,8 @@ export function NoteTag({ animal, bio, textAlpha }: Props) {
       }}
       style={{
         position: 'fixed',
-        left: '32px',
-        top: '100px',
+        left: '40px',
+        top: '110px',
         opacity: textAlpha,
         zIndex: 30,
         pointerEvents: textAlpha > 0.5 ? 'auto' : 'none',
@@ -62,24 +64,48 @@ export function NoteTag({ animal, bio, textAlpha }: Props) {
         aria-label={`关于 ${bio.name}`}
         className={FONT_ZH[animal]}
         style={{
-          width: '240px',
-          background: palette.paper,
-          backdropFilter: 'blur(5px)',
-          WebkitBackdropFilter: 'blur(5px)',
-          color: palette.ink,
-          padding: '18px 16px',
-          transform: 'rotate(-3deg)',
-          boxShadow: '3px 5px 10px rgba(0,0,0,0.25)',
-          textAlign: 'left',
+          background: 'transparent',
           border: 'none',
+          padding: '8px 4px',
+          color: palette.ink,
+          textAlign: 'left',
           cursor: 'pointer',
           lineHeight: 1.55,
+          textShadow: TEXT_SHADOW,
         }}
       >
-        <div className={FONT_EN[animal]} style={{ fontSize: '13px', letterSpacing: '0.08em', opacity: 0.55, marginBottom: '6px' }}>— note —</div>
-        <div className={FONT_EN[animal]} style={{ fontSize: '20px', fontWeight: 600 }}>{bio.name.split(' · ')[0]}</div>
-        <div className={FONT_EN[animal]} style={{ fontSize: '13px', opacity: 0.75, fontStyle: 'italic', marginTop: '6px' }}>{bio.tagline}</div>
-        <div className={FONT_EN[animal]} style={{ fontSize: '11px', opacity: 0.4, marginTop: '10px' }}>hover to read more →</div>
+        <div
+          className={FONT_EN[animal]}
+          style={{ fontSize: '11px', letterSpacing: '0.14em', opacity: 0.6, marginBottom: '6px', color: palette.muted }}
+        >
+          — note —
+        </div>
+        <div
+          className={FONT_EN[animal]}
+          style={{ fontSize: '20px', fontWeight: 600, letterSpacing: '0.01em' }}
+        >
+          {bio.name.split(' · ')[0]}
+        </div>
+        <div
+          className={FONT_EN[animal]}
+          style={{ fontSize: '13px', opacity: 0.75, fontStyle: 'italic', marginTop: '4px', color: palette.muted }}
+        >
+          {bio.tagline}
+        </div>
+        <div
+          style={{
+            borderTop: `1px solid ${palette.accent}`,
+            opacity: 0.35,
+            marginTop: '14px',
+            width: '64px',
+          }}
+        />
+        <div
+          className={FONT_EN[animal]}
+          style={{ fontSize: '10px', opacity: 0.45, marginTop: '8px', color: palette.muted, fontStyle: 'italic' }}
+        >
+          hover to read more →
+        </div>
       </button>
 
       <div
@@ -87,37 +113,51 @@ export function NoteTag({ animal, bio, textAlpha }: Props) {
         className={FONT_ZH[animal]}
         style={{
           position: 'absolute',
-          left: '240px',
-          top: 0,
+          left: '0',
+          top: '0',
           width: '320px',
-          background: palette.paper,
-          backdropFilter: 'blur(5px)',
-          WebkitBackdropFilter: 'blur(5px)',
+          background: palette.expandedBg,
+          backdropFilter: 'blur(6px)',
+          WebkitBackdropFilter: 'blur(6px)',
           color: palette.ink,
-          padding: '18px 16px',
-          marginLeft: '8px',
-          transform: open ? 'translateX(0) rotate(-1deg)' : 'translateX(-10px) rotate(-3deg)',
+          padding: '20px 22px',
+          borderRadius: '4px',
+          transform: open ? 'translateX(0)' : 'translateX(-10px)',
           opacity: open ? 1 : 0,
           visibility: open ? 'visible' : 'hidden',
           transition: 'transform 250ms ease-out, opacity 250ms ease-out, visibility 0s linear ' + (open ? '0s' : '250ms'),
-          boxShadow: '4px 6px 14px rgba(0,0,0,0.35)',
           fontSize: '14px',
-          lineHeight: 1.7,
+          lineHeight: 1.75,
           pointerEvents: open ? 'auto' : 'none',
+          border: `1px solid ${palette.accent}33`,
         }}
       >
-        <div className={FONT_EN[animal]} style={{ fontSize: '17px', fontWeight: 700 }}>{bio.name}</div>
-        <div style={{ fontSize: '13px', fontStyle: 'italic', marginTop: '6px', opacity: 0.85 }}>{bio.role}</div>
-        <div style={{ marginTop: '12px' }}>
+        <div
+          className={FONT_EN[animal]}
+          style={{ fontSize: '11px', letterSpacing: '0.14em', opacity: 0.55, marginBottom: '8px', color: palette.muted }}
+        >
+          — note —
+        </div>
+        <div className={FONT_EN[animal]} style={{ fontSize: '19px', fontWeight: 700, letterSpacing: '0.01em' }}>
+          {bio.name}
+        </div>
+        <div style={{ fontSize: '13px', fontStyle: 'italic', marginTop: '6px', opacity: 0.8 }}>
+          {bio.role}
+        </div>
+        <div style={{ borderTop: `1px solid ${palette.accent}`, opacity: 0.3, marginTop: '12px', marginBottom: '12px' }} />
+        <div>
           {bio.body.map((line, i) => (
             <div key={i}>{line}</div>
           ))}
         </div>
-        <div className={FONT_EN[animal]} style={{ fontSize: '12px', marginTop: '14px' }}>
+        <div className={FONT_EN[animal]} style={{ fontSize: '12px', marginTop: '16px' }}>
           {bio.links.map((l, i) => (
             <span key={l.label}>
               {i > 0 && ' · '}
-              <a href={l.href} style={{ color: palette.accent, textDecoration: 'none', borderBottom: `1px solid ${palette.accent}` }}>
+              <a
+                href={l.href}
+                style={{ color: palette.accent, textDecoration: 'none', borderBottom: `1px solid ${palette.accent}` }}
+              >
                 {l.label}
               </a>
             </span>
