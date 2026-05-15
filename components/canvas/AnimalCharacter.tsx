@@ -21,7 +21,7 @@ const HALF_TAN = Math.tan(FOV_RAD / 2)
 const RIPPLE_WORLD = {
   ...DEFAULT_RIPPLE_PARAMS,
   speed: 0.18,         // 慢，波前可见地传播
-  maxRadius: 0.5,      // 每圈传播范围大一些
+  maxRadius: 0.25,     // 每圈只在鼠标附近扩散，不漫到整只猫
   bandThickness: 0.07, // 厚一点的带，视觉上是"一圈"而不是一线
   pushStrength: 0.018, // 很轻 — 不抢戏
   spawnInterval: 70,   // 鼠标快移时频繁 spawn 新 ring
