@@ -19,10 +19,10 @@ const HALF_TAN = Math.tan(FOV_RAD / 2)
 // World-space ripple params（particles 在 ~[-1,1] 局部空间）
 const RIPPLE_WORLD = {
   ...DEFAULT_RIPPLE_PARAMS,
-  speed: 0.8,         // 世界单位/s
-  maxRadius: 0.6,     // 比之前大 70% — 范围更明显
-  bandThickness: 0.08,
-  pushStrength: 0.12, // 比之前大 2x — 推力更明显
+  speed: 0.55,
+  maxRadius: 0.32,
+  bandThickness: 0.06,
+  pushStrength: 0.08,
 }
 
 const PALETTES: Record<Animal, [number, number, number]> = {

@@ -50,12 +50,12 @@ export function NoteTag({ animal, bio, textAlpha }: Props) {
         aria-expanded={open}
         aria-label={`关于 ${bio.name}`}
         style={{
-          width: '180px',
+          width: '240px',
           background: palette.paper,
           color: palette.ink,
-          padding: '14px 12px',
+          padding: '18px 16px',
           transform: 'rotate(-3deg)',
-          boxShadow: '4px 6px 12px rgba(0,0,0,0.5)',
+          boxShadow: '5px 8px 16px rgba(0,0,0,0.55)',
           textAlign: 'left',
           border: 'none',
           cursor: 'pointer',
@@ -63,19 +63,19 @@ export function NoteTag({ animal, bio, textAlpha }: Props) {
           lineHeight: 1.55,
         }}
       >
-        <div style={{ fontSize: '11px', letterSpacing: '0.08em', opacity: 0.55, marginBottom: '4px' }}>— note —</div>
-        <div style={{ fontSize: '14px', fontWeight: 600 }}>{bio.name.split(' · ')[0]}</div>
-        <div style={{ fontSize: '11px', opacity: 0.7, fontStyle: 'italic', marginTop: '4px' }}>{bio.tagline}</div>
-        <div style={{ fontSize: '9px', opacity: 0.4, marginTop: '6px' }}>hover to read more →</div>
+        <div style={{ fontSize: '13px', letterSpacing: '0.08em', opacity: 0.55, marginBottom: '6px' }}>— note —</div>
+        <div style={{ fontSize: '18px', fontWeight: 600 }}>{bio.name.split(' · ')[0]}</div>
+        <div style={{ fontSize: '13px', opacity: 0.75, fontStyle: 'italic', marginTop: '6px' }}>{bio.tagline}</div>
+        <div style={{ fontSize: '11px', opacity: 0.4, marginTop: '10px' }}>hover to read more →</div>
       </button>
 
       <div
         aria-hidden={!open}
         style={{
           position: 'absolute',
-          left: '180px',
+          left: '240px',
           top: 0,
-          width: '280px',
+          width: '320px',
           background: palette.paper,
           color: palette.ink,
           padding: '18px 16px',
