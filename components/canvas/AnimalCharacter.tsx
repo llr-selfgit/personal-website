@@ -107,7 +107,7 @@ export function AnimalCharacter({ animal, count, position = [0, 0, 0], scale = 1
     const t = state.clock.elapsedTime
 
     // 呼吸：3% 缩放（明显但不浮夸）
-    const breathe = 1 + Math.sin(t * 0.5) * 0.03
+    const breathe = 1 + Math.sin(t * 1.8) * 0.03
     groupRef.current.scale.setScalar(scale * breathe)
 
     const now = performance.now()

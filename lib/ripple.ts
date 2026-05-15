@@ -42,7 +42,7 @@ export function computeRippleForce(input: RippleForceInput): { x: number; y: num
   const dx = particleX - ripple.x
   const dy = particleY - ripple.y
   const dist = Math.sqrt(dx * dx + dy * dy)
-  if (dist < 1) return { x: 0, y: 0 }
+  if (dist < 1e-4) return { x: 0, y: 0 }
 
   const ageS = (currentTime - ripple.t) / 1000
   const ringR = ageS * params.speed
