@@ -1,11 +1,10 @@
 export const catBio = {
-  name: 'llr · ireneegofly',
-  tagline: 'a corner for AI tinkering',
-  role: '在 anthropic 做 dev tools',
+  name: 'Irene LLR',
+  tagline: 'notes from a quiet corner',
+  role: '坚信着迷雾中的清亮',
   body: [
-    '我在做一些和 AI 有关的小事。',
-    '有时候是工具，有时候是想法，',
-    '更多时候是把没想清楚的东西写下来——',
+    '我做一些工具，记一些想法。',
+    '更多时候，是把没想清楚的东西写下来——',
     '等它自己长出来。',
   ],
   location: '2026 春 · 上海',

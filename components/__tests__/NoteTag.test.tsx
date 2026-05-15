@@ -6,7 +6,7 @@ import { catBio } from '@/content/cat/bio'
 describe('NoteTag', () => {
   it('renders tagline by default', () => {
     render(<NoteTag animal="cat" bio={catBio} textAlpha={1} />)
-    expect(screen.getByText('llr')).toBeInTheDocument()
+    expect(screen.getAllByText(catBio.name.split(' · ')[0]).length).toBeGreaterThan(0)
     expect(screen.getByText(catBio.tagline)).toBeInTheDocument()
     expect(screen.getByText(/hover to read more/i)).toBeInTheDocument()
   })
