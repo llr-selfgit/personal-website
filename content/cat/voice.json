@@ -7,5 +7,10 @@
   "essaysLink": "看看我留下的字",
   "toysLink": "想试试我做的小玩意吗",
   "contactLabel": "想找我，留下你的方式",
-  "switchAnimal": "换一只"
+  "switchAnimal": "换一只",
+  "leaveMessageHeading": "想留下点什么吗",
+  "leaveMessagePlaceholder": "推门进来，茶还温的——随便说点什么，我都会看到",
+  "leaveMessageSubmit": "留下",
+  "leaveMessageSuccess": "收到了，谢谢",
+  "leaveMessageError": "送出去失败了，过会再试"
 }

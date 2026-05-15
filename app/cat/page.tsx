@@ -6,6 +6,7 @@ import { HubScene } from '@/components/canvas/scenes/HubScene'
 import { TopBar } from '@/components/ui/TopBar'
 import { NoteTag } from '@/components/ui/NoteTag'
 import { QuoteHero } from '@/components/ui/QuoteHero'
+import { LeaveMessage } from '@/components/ui/LeaveMessage'
 import { catBio } from '@/content/cat/bio'
 import quotes from '@/content/cat/quotes.json'
 import { useIntroAnimation } from '@/lib/intro-animation'
@@ -71,17 +72,10 @@ export default function CatHubPage() {
           </ul>
         </nav>
 
-        {/* Contact */}
-        <footer
-          className="max-w-2xl mx-auto px-8 pb-32"
-          style={{ opacity: intro.textAlpha, transition: 'opacity 350ms ease-out' }}
-        >
-          <p className="font-cat-zh text-base text-cat-body/60 mb-4">{voice.contactLabel}</p>
-          <div className="flex gap-6 text-cat-accent">
-            <a href="mailto:luolingrui1008@gmail.com" className="font-cat-en italic hover:underline">email</a>
-            <a href="https://github.com/llr-selfgit" target="_blank" rel="noopener noreferrer" className="font-cat-en italic hover:underline">github</a>
-          </div>
-        </footer>
+        {/* Leave-message form (replaces previous contact footer) */}
+        <div className="max-w-2xl mx-auto px-8 pb-32">
+          <LeaveMessage animal="cat" voice={voice} textAlpha={intro.textAlpha} />
+        </div>
       </div>
     </>
   )
