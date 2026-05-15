@@ -1,4 +1,5 @@
 varying vec3 vColor;
+varying float vIntroAlpha;
 
 void main() {
   // Soft circular point with alpha falloff
@@ -7,5 +8,5 @@ void main() {
   if (dist > 0.5) discard;
 
   float alpha = smoothstep(0.5, 0.3, dist) * 0.85;
-  gl_FragColor = vec4(vColor, alpha);
+  gl_FragColor = vec4(vColor, alpha * vIntroAlpha);
 }

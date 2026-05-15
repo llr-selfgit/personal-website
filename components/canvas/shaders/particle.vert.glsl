@@ -3,6 +3,8 @@ attribute vec3 aColor;
 varying vec3 vColor;
 uniform float uTime;
 uniform float uPixelRatio;
+uniform float uIntroAlpha;
+varying float vIntroAlpha;
 
 void main() {
   vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
@@ -13,4 +15,5 @@ void main() {
   gl_PointSize = clamp(gl_PointSize, 0.5, 4.0);
 
   vColor = aColor;
+  vIntroAlpha = uIntroAlpha;
 }

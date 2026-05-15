@@ -11,10 +11,11 @@ interface Props {
   positions: Float32Array
   colors: Float32Array
   sizes: Float32Array
+  introAlpha?: number
   onTick?: (delta: number, points: THREE.Points) => void
 }
 
-export function ParticleField({ positions, colors, sizes, onTick }: Props) {
+export function ParticleField({ positions, colors, sizes, introAlpha, onTick }: Props) {
   const ref = useRef<THREE.Points>(null!)
   const { gl } = useThree()
   const pixelRatio = gl.getPixelRatio()
@@ -34,6 +35,7 @@ export function ParticleField({ positions, colors, sizes, onTick }: Props) {
       uniforms: {
         uTime: { value: 0 },
         uPixelRatio: { value: pixelRatio },
+        uIntroAlpha: { value: 1 },
       },
       transparent: true,
       depthWrite: false,
@@ -44,6 +46,7 @@ export function ParticleField({ positions, colors, sizes, onTick }: Props) {
   useFrame((state, delta) => {
     if (!ref.current) return
     material.uniforms.uTime.value = state.clock.elapsedTime
+    material.uniforms.uIntroAlpha.value = introAlpha ?? 1
     onTick?.(delta, ref.current)
   })
 
