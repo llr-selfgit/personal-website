@@ -5,9 +5,9 @@ import type { Animal } from '@/lib/types'
 import type { Bio } from '@/content/cat/bio'
 
 const PALETTES: Record<Animal, { paper: string; ink: string; accent: string }> = {
-  cat:  { paper: 'rgba(244, 230, 200, 0.78)', ink: '#3a2818', accent: '#b89868' },
-  wolf: { paper: 'rgba(216, 221, 228, 0.78)', ink: '#1c2530', accent: '#7a8b9c' },
-  deer: { paper: 'rgba(236, 232, 221, 0.78)', ink: '#403828', accent: '#a8957a' },
+  cat:  { paper: 'rgba(244, 230, 200, 0.42)', ink: '#2a1a08', accent: '#b89868' },
+  wolf: { paper: 'rgba(216, 221, 228, 0.42)', ink: '#0e1620', accent: '#7a8b9c' },
+  deer: { paper: 'rgba(236, 232, 221, 0.42)', ink: '#2e2718', accent: '#a8957a' },
 }
 
 const FONT_ZH: Record<Animal, string> = {
@@ -64,12 +64,12 @@ export function NoteTag({ animal, bio, textAlpha }: Props) {
         style={{
           width: '240px',
           background: palette.paper,
-          backdropFilter: 'blur(3px)',
-          WebkitBackdropFilter: 'blur(3px)',
+          backdropFilter: 'blur(5px)',
+          WebkitBackdropFilter: 'blur(5px)',
           color: palette.ink,
           padding: '18px 16px',
           transform: 'rotate(-3deg)',
-          boxShadow: '5px 8px 16px rgba(0,0,0,0.4)',
+          boxShadow: '3px 5px 10px rgba(0,0,0,0.25)',
           textAlign: 'left',
           border: 'none',
           cursor: 'pointer',
@@ -91,8 +91,8 @@ export function NoteTag({ animal, bio, textAlpha }: Props) {
           top: 0,
           width: '320px',
           background: palette.paper,
-          backdropFilter: 'blur(3px)',
-          WebkitBackdropFilter: 'blur(3px)',
+          backdropFilter: 'blur(5px)',
+          WebkitBackdropFilter: 'blur(5px)',
           color: palette.ink,
           padding: '18px 16px',
           marginLeft: '8px',
@@ -100,7 +100,7 @@ export function NoteTag({ animal, bio, textAlpha }: Props) {
           opacity: open ? 1 : 0,
           visibility: open ? 'visible' : 'hidden',
           transition: 'transform 250ms ease-out, opacity 250ms ease-out, visibility 0s linear ' + (open ? '0s' : '250ms'),
-          boxShadow: '6px 10px 20px rgba(0,0,0,0.6)',
+          boxShadow: '4px 6px 14px rgba(0,0,0,0.35)',
           fontSize: '14px',
           lineHeight: 1.7,
           pointerEvents: open ? 'auto' : 'none',
