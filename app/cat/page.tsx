@@ -46,7 +46,11 @@ export default function CatHubPage() {
           position: 'fixed',
           inset: 0,
           overflow: 'hidden',
-          zIndex: -20,
+          // z-index 0 (not negative) — negative z places the element behind
+          // the document root and browsers route pointer events oddly. The
+          // sibling min-h-screen UI overlay below in the JSX naturally stacks
+          // on top via DOM order.
+          zIndex: 0,
           pointerEvents: 'none',
         }}
       >
