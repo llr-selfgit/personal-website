@@ -47,6 +47,7 @@ export default function CatHubPage() {
           inset: 0,
           overflow: 'hidden',
           zIndex: -20,
+          pointerEvents: 'none',
         }}
       >
         <div
@@ -57,6 +58,7 @@ export default function CatHubPage() {
             transform: 'translateX(-50%)',
             width: 'max(100vw, calc(100vh * 1672 / 941))',
             height: 'max(100vh, calc(100vw * 941 / 1672))',
+            pointerEvents: 'none',
           }}
         >
           {/* Bg painting + sepia overlay */}
@@ -69,6 +71,7 @@ export default function CatHubPage() {
                 'linear-gradient(rgba(42, 31, 21, 0.65), rgba(42, 31, 21, 0.78)), url(/assets/cat/bg-hub.png)',
               backgroundSize: 'cover',
               backgroundPosition: 'center',
+              pointerEvents: 'none',
             }}
           />
 
@@ -80,7 +83,10 @@ export default function CatHubPage() {
         </div>
       </div>
 
-      <div className="min-h-screen text-cat-body relative">
+      <div
+        className="min-h-screen text-cat-body relative"
+        style={{ pointerEvents: 'none' }}
+      >
         <TopBar animal="cat" textAlpha={intro.textAlpha} />
 
         <NoteTag animal="cat" bio={catBio} textAlpha={intro.textAlpha} />
