@@ -3,6 +3,7 @@
 import { PersistentCanvas } from '../PersistentCanvas'
 import { AnimalCharacter } from '../AnimalCharacter'
 import { YarnDecoration } from '../YarnDecoration'
+import { BooksDecoration } from '../BooksDecoration'
 import { useSiteStore } from '@/lib/store'
 import type { Animal } from '@/lib/types'
 
@@ -48,6 +49,9 @@ export function HubScene({ animal, skipIntro }: Props) {
           count={15000}
           periodSec={13}
         />
+      )}
+      {animal === 'cat' && (
+        <BooksDecoration position={[-3.4, -1.7, 0]} scale={0.5} count={12000} />
       )}
     </PersistentCanvas>
   )

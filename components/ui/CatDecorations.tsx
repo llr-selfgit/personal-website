@@ -27,24 +27,7 @@ export function CatDecorations({ textAlpha = 1 }: Props) {
         pointerEvents: 'none',
       }}
     >
-      {/* ───── 书堆 — static, flush against floor in front of bg bookshelf ───── */}
-      <div
-        style={{
-          position: 'absolute',
-          left: '3%',
-          bottom: '0',
-          width: '11%',
-          filter: 'sepia(0.35) brightness(0.92)',
-          opacity: 0.85,
-        }}
-      >
-        <img
-          src="/assets/cat/decorations/deco-cat-books.png"
-          alt=""
-          style={{ width: '100%', height: 'auto', display: 'block' }}
-          draggable={false}
-        />
-      </div>
+      {/* 书堆 is now particle-ized and lives in HubScene (BooksDecoration). */}
 
       {/* ───── 茶杯 — overlays the bg painted teacup (% of scene) ───── */}
       <div
