@@ -55,30 +55,38 @@ export default function CatHubPage() {
         <TopBar animal="cat" textAlpha={intro.textAlpha} />
 
         <NoteTag animal="cat" bio={catBio} textAlpha={intro.textAlpha} />
-        <QuoteHero animal="cat" quotes={quotes} textAlpha={intro.textAlpha} />
 
-        {/* Nav 子页 — D persona "hover 才浮现" */}
-        <nav
-          className="max-w-2xl mx-auto px-8 pb-24"
-          style={{ opacity: intro.textAlpha, transition: 'opacity 350ms ease-out' }}
+        {/* Centered + slightly right-shifted content column.
+            All three sections share the same container so left edges align. */}
+        <div
+          className="max-w-2xl mx-auto px-8"
+          style={{ transform: 'translateX(5vw)' }}
         >
-          <ul className="flex flex-col md:flex-row gap-8 text-cat-heading opacity-50 hover:opacity-100 transition-opacity duration-700">
-            <li>
-              <a href="/cat/essays" className="font-cat-zh text-lg border-b border-cat-accent/40 hover:border-cat-accent pb-1 transition">
-                {voice.essaysLink} →
-              </a>
-            </li>
-            <li>
-              <a href="/cat/toys" className="font-cat-zh text-lg border-b border-cat-accent/40 hover:border-cat-accent pb-1 transition">
-                {voice.toysLink} →
-              </a>
-            </li>
-          </ul>
-        </nav>
+          <QuoteHero animal="cat" quotes={quotes} textAlpha={intro.textAlpha} />
 
-        {/* Leave-message form (replaces previous contact footer) */}
-        <div className="max-w-2xl mx-auto px-8 pb-32">
-          <LeaveMessage animal="cat" voice={voice} textAlpha={intro.textAlpha} />
+          {/* Nav 子页 — D persona "hover 才浮现" */}
+          <nav
+            className="pb-24"
+            style={{ opacity: intro.textAlpha, transition: 'opacity 350ms ease-out' }}
+          >
+            <ul className="flex flex-col md:flex-row gap-8 text-cat-heading opacity-50 hover:opacity-100 transition-opacity duration-700">
+              <li>
+                <a href="/cat/essays" className="font-cat-zh text-lg border-b border-cat-accent/40 hover:border-cat-accent pb-1 transition">
+                  {voice.essaysLink} →
+                </a>
+              </li>
+              <li>
+                <a href="/cat/toys" className="font-cat-zh text-lg border-b border-cat-accent/40 hover:border-cat-accent pb-1 transition">
+                  {voice.toysLink} →
+                </a>
+              </li>
+            </ul>
+          </nav>
+
+          {/* Leave-message form (replaces previous contact footer) */}
+          <div className="pb-32">
+            <LeaveMessage animal="cat" voice={voice} textAlpha={intro.textAlpha} />
+          </div>
         </div>
       </div>
     </>
