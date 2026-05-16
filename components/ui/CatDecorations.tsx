@@ -37,40 +37,22 @@ export function CatDecorations({ textAlpha = 1 }: Props) {
         pointerEvents: 'none',
       }}
     >
-      {/* ───── 书堆 — static stack + occasional page-flip overlay ───── */}
+      {/* ───── 书堆 — fully static, placed flush against the floor in
+            front of the bg bookshelf (far left). ───── */}
       <div
         style={{
           position: 'absolute',
-          left: 'min(7vw, 100px)',
-          bottom: 'min(8vh, 80px)',
+          left: 'min(4vw, 60px)',
+          bottom: 0,
           width: 'clamp(120px, 13vw, 200px)',
           filter: 'sepia(0.35) brightness(0.92)',
-          opacity: 0.8,
+          opacity: 0.85,
         }}
-      >
-        <img
+      ><img
           src="/assets/cat/decorations/deco-cat-books.png"
           alt=""
           style={{ width: '100%', height: 'auto', display: 'block' }}
           draggable={false}
-        />
-        {/* Page-flip overlay — sits over the open-book area on top of the
-            stack. Approximate position; the brief flip animation hides any
-            misalignment. */}
-        <div
-          className="deco-page-flip"
-          style={{
-            position: 'absolute',
-            left: '24%',
-            top: '14%',
-            width: '40%',
-            height: '8%',
-            background:
-              'linear-gradient(135deg, rgba(238, 224, 188, 0.72) 0%, rgba(204, 184, 144, 0.6) 100%)',
-            borderRadius: '1px 3px 1px 1px',
-            transformOrigin: 'center bottom',
-            boxShadow: '0 1px 1px rgba(0,0,0,0.18)',
-          }}
         />
       </div>
 

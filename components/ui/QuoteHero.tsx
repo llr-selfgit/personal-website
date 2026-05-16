@@ -33,14 +33,25 @@ export function QuoteHero({ animal, quotes, textAlpha }: Props) {
   const q = quotes[index]
 
   return (
-    <section style={{ opacity: textAlpha, transition: 'opacity 350ms ease-out' }} className="px-8 pt-40 pb-32 max-w-2xl mx-auto">
+    <section
+      style={{
+        opacity: textAlpha,
+        transition: 'opacity 350ms ease-out',
+        maxWidth: '38rem',
+        marginLeft: 'max(2rem, 6vw)',
+        marginRight: 'auto',
+      }}
+      className="px-8 pt-40 pb-32"
+    >
       <blockquote
         className={FONT_CLASS[animal]}
         style={{
-          fontSize: 'clamp(1.4rem, 2.5vw, 2rem)',
-          lineHeight: 1.55,
-          textShadow: '0 2px 12px rgba(0,0,0,0.5)',
-          color: '#e6d3a3',
+          fontSize: 'clamp(1.6rem, 2.9vw, 2.35rem)',
+          fontWeight: 500,
+          lineHeight: 1.5,
+          letterSpacing: '0.02em',
+          textShadow: '0 2px 14px rgba(0,0,0,0.55)',
+          color: '#f0dba8',
         }}
       >
         {q.text}

@@ -32,7 +32,7 @@ export function HubScene({ animal, skipIntro }: Props) {
       <AnimalCharacter
         animal={animal}
         count={charCount}
-        position={animal === 'cat' ? [2.5, -1.7, 0] : animal === 'wolf' ? [1.5, 0.3, 0] : [1.6, -0.2, 0]}
+        position={animal === 'cat' ? [2.0, -1.7, 0] : animal === 'wolf' ? [1.5, 0.3, 0] : [1.6, -0.2, 0]}
         scale={1.2}
         skipIntro={skipIntro}
         // Sync cat breathing with yarn rolling: same 13s period, phase
