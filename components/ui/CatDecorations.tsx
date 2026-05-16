@@ -51,7 +51,7 @@ export function CatDecorations({ textAlpha = 1 }: Props) {
         style={{
           position: 'absolute',
           left: '28%',
-          top: '47%',
+          top: '48%',
           width: '9%',
           filter: 'sepia(0.3) brightness(0.95)',
           opacity: 0.95,
