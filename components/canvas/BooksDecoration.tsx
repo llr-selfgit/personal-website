@@ -174,6 +174,8 @@ export function BooksDecoration({
   if (!data) return null
 
   const handleEnter = () => {
+    // eslint-disable-next-line no-console
+    console.log('[BooksDecoration] hover detected at', latestTime.current.toFixed(2))
     if (hoverStartTime.current === null) {
       hoverStartTime.current = latestTime.current
     }
@@ -182,11 +184,17 @@ export function BooksDecoration({
   return (
     <group ref={groupRef} position={position}>
       <ParticleField positions={data.positions} colors={data.colors} sizes={data.sizes} />
-      {/* Invisible square mesh for raycast / hover detection. Slightly in
-          front (z=0.01) so it's the first hit before any particle. */}
-      <mesh onPointerEnter={handleEnter} position={[0, 0, 0.01]}>
-        <planeGeometry args={[2 * scale, 2 * scale]} />
-        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      {/* DEBUG: visible hover plane so the user can confirm where the hover
+          target sits. Slightly larger than the particle cloud to give some
+          hover tolerance. Both onPointerOver and onPointerEnter wired to
+          rule out subtle event-firing differences. */}
+      <mesh
+        onPointerEnter={handleEnter}
+        onPointerOver={handleEnter}
+        position={[0, 0, 0.01]}
+      >
+        <planeGeometry args={[3 * scale, 3 * scale]} />
+        <meshBasicMaterial color="#ff4488" transparent opacity={0.18} depthWrite={false} />
       </mesh>
     </group>
   )
