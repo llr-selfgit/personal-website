@@ -26,6 +26,10 @@ interface SiteState {
   /** Reserved for D path (entry triptych → hub continuation). null = no continuation, fall back to C. */
   introState: null | { animal: Animal; sourcePositions: Float32Array }
   setIntroState: (s: SiteState['introState']) => void
+  /** Monotonically incrementing trigger for "books area hovered" event.
+   * BooksDecoration watches this and starts a flip on each increment. */
+  bookHoverTrigger: number
+  triggerBookHover: () => void
 }
 
 export const useSiteStore = create<SiteState>()(
@@ -52,6 +56,8 @@ export const useSiteStore = create<SiteState>()(
       setSkipIntroOnNextHub: (skip) => set({ skipIntroOnNextHub: skip }),
       introState: null,
       setIntroState: (s) => set({ introState: s }),
+      bookHoverTrigger: 0,
+      triggerBookHover: () => set((s) => ({ bookHoverTrigger: s.bookHoverTrigger + 1 })),
     }),
     {
       name: 'personal-website-state',

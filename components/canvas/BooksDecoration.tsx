@@ -5,6 +5,7 @@ import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { ParticleField } from './ParticleField'
 import { samplePositionsAndColorsFromAlpha } from '@/lib/particles'
+import { useSiteStore } from '@/lib/store'
 
 /**
  * Book stack — particle reproduction of the bg-removed books PNG.
@@ -64,6 +65,19 @@ export function BooksDecoration({
   const spineX = useRef<number>(0)
   const hoverStartTime = useRef<number | null>(null)
   const latestTime = useRef(0)
+
+  // Hover signal from HTML overlay (CatDecorations). Increments each time
+  // the cursor enters the books region. We trigger a flip on each new value.
+  const bookHoverTrigger = useSiteStore((s) => s.bookHoverTrigger)
+  const lastHandledTrigger = useRef<number>(0)
+  useEffect(() => {
+    if (bookHoverTrigger !== lastHandledTrigger.current) {
+      lastHandledTrigger.current = bookHoverTrigger
+      if (hoverStartTime.current === null) {
+        hoverStartTime.current = latestTime.current
+      }
+    }
+  }, [bookHoverTrigger])
 
   useEffect(() => {
     const img = new Image()
@@ -193,35 +207,9 @@ export function BooksDecoration({
 
   if (!data) return null
 
-  const handleEnter = (e: { type: string }) => {
-    // eslint-disable-next-line no-console
-    console.log('[BooksDecoration] pointer event:', e.type, 'at', latestTime.current.toFixed(2))
-    if (hoverStartTime.current === null) {
-      hoverStartTime.current = latestTime.current
-    }
-  }
-
   return (
     <group ref={groupRef} position={position}>
       <ParticleField positions={data.positions} colors={data.colors} sizes={data.sizes} />
-      {/* DEBUG visible hover plane — translucent magenta so you can see
-          exactly where the hover target is. Once hover is confirmed, drop
-          to opacity 0. */}
-      <mesh
-        onPointerEnter={handleEnter}
-        onPointerOver={handleEnter}
-        onPointerMove={handleEnter}
-        position={[0, 0, 0.6]}
-      >
-        <planeGeometry args={[2.4 * scale, 2.4 * scale]} />
-        <meshBasicMaterial
-          color="#ff00ff"
-          transparent
-          opacity={0.25}
-          depthWrite={false}
-          side={THREE.DoubleSide}
-        />
-      </mesh>
     </group>
   )
 }

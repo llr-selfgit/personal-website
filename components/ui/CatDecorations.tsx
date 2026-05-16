@@ -1,5 +1,8 @@
 'use client'
 
+import { useRef } from 'react'
+import { useSiteStore } from '@/lib/store'
+
 /**
  * Cat hub decorative elements: 书堆 / 茶杯 / 毛线球.
  *
@@ -8,6 +11,12 @@
  * the bg painting's aspect ratio). All positions are percentages of
  * that container, so they always align with the bg painting features
  * regardless of viewport size or aspect.
+ *
+ * Hover-target for the particle book stack (which lives in the canvas
+ * one stacking-level back) is an HTML div here — R3F's pointer events
+ * don't fire reliably when the canvas sits inside a negative-z-index
+ * scene wrapper, so we detect hover in HTML and signal the canvas via
+ * Zustand (bookHoverTrigger increments).
  */
 
 interface Props {
@@ -15,6 +24,16 @@ interface Props {
 }
 
 export function CatDecorations({ textAlpha = 1 }: Props) {
+  const triggerBookHover = useSiteStore((s) => s.triggerBookHover)
+  // Debounce: ignore re-entries while a flip is already running (1.8s).
+  const lastTrigger = useRef(0)
+  const handleBookEnter = () => {
+    const now = performance.now()
+    if (now - lastTrigger.current < 1800) return
+    lastTrigger.current = now
+    triggerBookHover()
+  }
+
   return (
     <div
       aria-hidden
@@ -27,7 +46,20 @@ export function CatDecorations({ textAlpha = 1 }: Props) {
         pointerEvents: 'none',
       }}
     >
-      {/* 书堆 is now particle-ized and lives in HubScene (BooksDecoration). */}
+      {/* Invisible HTML hover target for the particle book stack in the
+          canvas. Positioned by % so it tracks the scene at any viewport. */}
+      <div
+        onMouseEnter={handleBookEnter}
+        style={{
+          position: 'absolute',
+          left: '4%',
+          bottom: '0',
+          width: '14%',
+          height: '24%',
+          pointerEvents: 'auto',
+          cursor: 'default',
+        }}
+      />
 
       {/* ───── 茶杯 — overlays the bg painted teacup (% of scene) ───── */}
       <div
