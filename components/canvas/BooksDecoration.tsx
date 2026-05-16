@@ -34,10 +34,13 @@ interface Props {
   /** Duration of one full flip cycle in seconds (lift + return). */
   flipDurationSec?: number
   /**
-   * Fraction of the stack's height (from top) treated as the "page" and
-   * flipped. 0..1, default 0.18 = top 18%.
+   * Fraction of the stack's height (from top) treated as the open-book
+   * "page" region. The spine sits at the horizontal midpoint of this
+   * region; only particles to the right of the spine flip. 0..1.
    */
   pageRegionFrac?: number
+  /** Peak Y lift at θ=π/2, as fraction of scale. Adds visible elevation. */
+  liftFrac?: number
 }
 
 export function BooksDecoration({
@@ -45,7 +48,8 @@ export function BooksDecoration({
   scale = 0.5,
   count = 12000,
   flipDurationSec = 1.8,
-  pageRegionFrac = 0.18,
+  pageRegionFrac = 0.4,
+  liftFrac = 0.1,
 }: Props) {
   const [data, setData] = useState<{
     positions: Float32Array
@@ -103,23 +107,29 @@ export function BooksDecoration({
         by[i] = positions[i * 3 + 1]
       }
 
-      // Identify page particles = top pageRegionFrac of the stack's height.
-      // Use percentile on baseY so it adapts to actual book bbox.
+      // Identify the open-book "page region": top pageRegionFrac of particles
+      // by Y. We compute its X bbox to find the spine (horizontal midpoint).
       const sortedY = Float32Array.from(by).sort()
       const cutoff = sortedY[Math.floor(n * (1 - pageRegionFrac))]
       let pageMinX = Infinity
+      let pageMaxX = -Infinity
       for (let i = 0; i < n; i++) {
         if (by[i] >= cutoff) {
-          pageFlag[i] = 1
           if (bx[i] < pageMinX) pageMinX = bx[i]
+          if (bx[i] > pageMaxX) pageMaxX = bx[i]
         }
       }
-      const localSpineX = pageMinX
-
-      // Precompute r for each particle (only meaningful where pageFlag = 1).
+      // Spine sits at the horizontal middle of the page region (the binding
+      // of the open book on top of the stack). Only particles to the right
+      // of the spine actually flip — they swing up and over to the left,
+      // simulating a single page being turned.
+      const localSpineX = (pageMinX + pageMaxX) / 2
       const r = new Float32Array(n)
       for (let i = 0; i < n; i++) {
-        if (pageFlag[i] === 1) r[i] = bx[i] - localSpineX
+        if (by[i] >= cutoff && bx[i] > localSpineX) {
+          pageFlag[i] = 1
+          r[i] = bx[i] - localSpineX
+        }
       }
 
       baseX.current = bx
@@ -189,10 +199,13 @@ export function BooksDecoration({
       return
     }
 
-    // θ goes 0 → π → 0 across the cycle (lift + return).
+    // θ goes 0 → π → 0 across the cycle (lift + return). A vertical lift
+    // component peaks at θ=π/2 so the page is visibly elevated when it's
+    // edge-on to the camera (otherwise it'd disappear into a line).
     const theta = Math.PI * Math.sin(progress * Math.PI)
     const cosT = Math.cos(theta)
     const sinT = Math.sin(theta)
+    const liftY = Math.sin(theta) * scale * liftFrac
     const sX = spineX.current
     const flag = isPage.current
     const rArr = pageR.current
@@ -201,7 +214,7 @@ export function BooksDecoration({
       if (flag[i] === 1) {
         const r = rArr[i]
         positions[i * 3] = sX + r * cosT
-        positions[i * 3 + 1] = baseY.current[i]
+        positions[i * 3 + 1] = baseY.current[i] + liftY
         positions[i * 3 + 2] = r * sinT
       } else {
         positions[i * 3] = baseX.current[i]
