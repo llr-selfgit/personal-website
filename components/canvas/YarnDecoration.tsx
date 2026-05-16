@@ -225,7 +225,6 @@ export function YarnDecoration({
   const [data, setData] = useState<Classified | null>(null)
   const ballGroupRef = useRef<THREE.Group>(null!)
   const strandGroupRef = useRef<THREE.Group>(null!)
-  const startTime = useRef<number | null>(null)
 
   useEffect(() => {
     const img = new Image()
@@ -245,9 +244,11 @@ export function YarnDecoration({
 
   useFrame((state) => {
     if (!data) return
-    if (startTime.current === null) startTime.current = state.clock.elapsedTime
-    const t = ((state.clock.elapsedTime - startTime.current) % periodSec) / periodSec
-    const u = (1 - Math.cos(t * 2 * Math.PI)) / 2
+    // Use canvas-shared clock directly (no internal startTime) so the
+    // cycle is phase-locked with anything else using state.clock.elapsedTime
+    // — specifically the cat's breathing in AnimalCharacter.
+    const elapsed = state.clock.elapsedTime
+    const u = (1 - Math.cos((elapsed * 2 * Math.PI) / periodSec)) / 2
     const distance = u * travelX
     const rotation = +(distance / data.ballRadius) // CCW outbound, CW inbound
 

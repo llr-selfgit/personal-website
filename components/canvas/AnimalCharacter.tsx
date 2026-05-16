@@ -41,9 +41,21 @@ interface Props {
   scale?: number
   /** When true, skip intro animation (e.g., returning from sub-page) */
   skipIntro?: boolean
+  /** Breathing period in seconds. Defaults to ~6.28s (1 rad/s). */
+  breathPeriodSec?: number
+  /** Breathing scale amplitude (peak deviation from 1). */
+  breathAmplitude?: number
 }
 
-export function AnimalCharacter({ animal, count, position = [0, 0, 0], scale = 1, skipIntro }: Props) {
+export function AnimalCharacter({
+  animal,
+  count,
+  position = [0, 0, 0],
+  scale = 1,
+  skipIntro,
+  breathPeriodSec = (2 * Math.PI) / 1.0,
+  breathAmplitude = 0.03,
+}: Props) {
   const [data, setData] = useState<{ positions: Float32Array; colors: Float32Array; sizes: Float32Array } | null>(null)
   const groupRef = useRef<THREE.Group>(null!)
   const pointsRef = useRef<THREE.Points | null>(null)
@@ -129,7 +141,11 @@ export function AnimalCharacter({ animal, count, position = [0, 0, 0], scale = 1
     const t = state.clock.elapsedTime
 
     // 呼吸：3% 缩放（明显但不浮夸）
-    const breathe = 1 + Math.sin(t * 1.0) * 0.03
+    // Inhale peak (max scale) when cos = 1 (start of cycle). Exhale peak
+    // (min scale) at cos = -1 (mid-cycle). Phase-aligned with yarn rolling
+    // when both use the same period: yarn u = (1 - cos)/2, so u=0 at
+    // inhale-peak and u=1 at exhale-peak.
+    const breathe = 1 + breathAmplitude * Math.cos((t * 2 * Math.PI) / breathPeriodSec)
     groupRef.current.scale.setScalar(scale * breathe)
 
     // Intro animation: lerp positions from introStarts toward origins
