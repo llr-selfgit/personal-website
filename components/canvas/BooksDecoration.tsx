@@ -193,7 +193,9 @@ export function BooksDecoration({
 
   if (!data) return null
 
-  const handleEnter = () => {
+  const handleEnter = (e: { type: string }) => {
+    // eslint-disable-next-line no-console
+    console.log('[BooksDecoration] pointer event:', e.type, 'at', latestTime.current.toFixed(2))
     if (hoverStartTime.current === null) {
       hoverStartTime.current = latestTime.current
     }
@@ -202,14 +204,23 @@ export function BooksDecoration({
   return (
     <group ref={groupRef} position={position}>
       <ParticleField positions={data.positions} colors={data.colors} sizes={data.sizes} />
-      {/* Transparent plane for raycast / hover detection. */}
+      {/* DEBUG visible hover plane — translucent magenta so you can see
+          exactly where the hover target is. Once hover is confirmed, drop
+          to opacity 0. */}
       <mesh
         onPointerEnter={handleEnter}
         onPointerOver={handleEnter}
+        onPointerMove={handleEnter}
         position={[0, 0, 0.6]}
       >
         <planeGeometry args={[2.4 * scale, 2.4 * scale]} />
-        <meshBasicMaterial transparent opacity={0} depthWrite={false} side={THREE.DoubleSide} />
+        <meshBasicMaterial
+          color="#ff00ff"
+          transparent
+          opacity={0.25}
+          depthWrite={false}
+          side={THREE.DoubleSide}
+        />
       </mesh>
     </group>
   )
