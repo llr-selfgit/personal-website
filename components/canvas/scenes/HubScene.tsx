@@ -38,12 +38,11 @@ export function HubScene({ animal, skipIntro }: Props) {
       />
       {showYarn && (
         <YarnDecoration
-          spool={[-0.2, -1.7, 0]}
-          travelX={1.0}
+          start={[-0.2, -2.05, 0]}
+          travelX={0.9}
           radius={0.18}
           scale={0.18}
-          ballCount={15000}
-          strandCount={600}
+          count={15000}
           periodSec={13}
         />
       )}
