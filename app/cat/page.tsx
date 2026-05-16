@@ -34,22 +34,51 @@ export default function CatHubPage() {
 
   return (
     <>
-      {/* 全屏背景画 + sepia 渐变 overlay 让文字仍可读 */}
+      {/* Scene container — locked to bg-hub.png aspect ratio (1672×941, ~16:9).
+          Sized to cover the viewport (uses max() so it's always at least as
+          large as the viewport; center + overflow:hidden trim the excess).
+          Bg painting, particle canvas, and HTML decorations all live inside
+          this container, positioned in % of its size, so they stay aligned
+          with each other regardless of viewport size or aspect ratio. */}
       <div
-        className="fixed inset-0 -z-20"
-        style={{
-          backgroundImage: 'linear-gradient(rgba(42, 31, 21, 0.65), rgba(42, 31, 21, 0.78)), url(/assets/cat/bg-hub.png)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
         aria-hidden
-      />
+        style={{
+          position: 'fixed',
+          inset: 0,
+          overflow: 'hidden',
+          zIndex: -20,
+        }}
+      >
+        <div
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: 'max(100vw, calc(100vh * 1672 / 941))',
+            height: 'max(100vh, calc(100vw * 941 / 1672))',
+          }}
+        >
+          {/* Bg painting + sepia overlay */}
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              zIndex: 0,
+              backgroundImage:
+                'linear-gradient(rgba(42, 31, 21, 0.65), rgba(42, 31, 21, 0.78)), url(/assets/cat/bg-hub.png)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }}
+          />
 
-      {/* 装饰元素：书堆 / 茶杯 / 毛线球 — z-index -10，bg 之上、canvas 之下 */}
-      <CatDecorations textAlpha={intro.textAlpha} />
+          {/* HTML decorations (% positions, relative to scene) */}
+          <CatDecorations textAlpha={intro.textAlpha} />
 
-      {/* 粒子角色 canvas，z-index -1 */}
-      <HubScene animal="cat" skipIntro={skipThisIntro} />
+          {/* Particle canvas (fills scene, world coords map to scene area) */}
+          <HubScene animal="cat" skipIntro={skipThisIntro} />
+        </div>
+      </div>
 
       <div className="min-h-screen text-cat-body relative">
         <TopBar animal="cat" textAlpha={intro.textAlpha} />

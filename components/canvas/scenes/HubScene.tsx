@@ -27,7 +27,7 @@ export function HubScene({ animal, skipIntro }: Props) {
   const showYarn = animal === 'cat' && !reduceMotion
 
   return (
-    <PersistentCanvas fixed>
+    <PersistentCanvas fillParent>
       <ambientLight intensity={0.5} />
       <AnimalCharacter
         animal={animal}
