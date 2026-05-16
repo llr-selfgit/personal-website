@@ -67,9 +67,13 @@ export function BooksDecoration({
   const latestTime = useRef(0)
 
   useEffect(() => {
+    // eslint-disable-next-line no-console
+    console.log('[BooksDecoration] mounting, loading PNG')
     const img = new Image()
     img.crossOrigin = 'anonymous'
     img.onload = () => {
+      // eslint-disable-next-line no-console
+      console.log('[BooksDecoration] PNG loaded', img.width, 'x', img.height)
       const c = document.createElement('canvas')
       c.width = img.width
       c.height = img.height
@@ -103,6 +107,12 @@ export function BooksDecoration({
   useFrame((state) => {
     latestTime.current = state.clock.elapsedTime
     if (!data || !baseX.current || !baseY.current) return
+
+    // DEBUG: auto-trigger wave every cycle (no hover required) — so we can
+    // see whether the animation runs regardless of hover detection.
+    if (hoverStartTime.current === null) {
+      hoverStartTime.current = state.clock.elapsedTime
+    }
 
     // Compute wave progress; >= 1 means inactive.
     let waveProgress = 2
@@ -191,10 +201,10 @@ export function BooksDecoration({
       <mesh
         onPointerEnter={handleEnter}
         onPointerOver={handleEnter}
-        position={[0, 0, 0.01]}
+        position={[0, 0, 1]}
       >
-        <planeGeometry args={[3 * scale, 3 * scale]} />
-        <meshBasicMaterial color="#ff4488" transparent opacity={0.18} depthWrite={false} />
+        <planeGeometry args={[8, 5]} />
+        <meshBasicMaterial color="#ff00ff" transparent opacity={0.35} depthWrite={false} side={THREE.DoubleSide} />
       </mesh>
     </group>
   )
