@@ -64,7 +64,6 @@ export function LeaveMessage({ animal, voice, textAlpha = 1 }: Props) {
         WebkitBackdropFilter: 'blur(2px)',
         padding: '16px 18px',
         maxWidth: '360px',
-        marginLeft: 'auto',
       }}
       className="font-cat-zh"
     >
