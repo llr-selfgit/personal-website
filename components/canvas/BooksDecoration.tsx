@@ -149,12 +149,21 @@ export function BooksDecoration({
     )
       return
 
+    // DEBUG: auto-trigger a flip on a loop (gap of 1.2s between flips) so we
+    // can verify the animation runs regardless of hover detection.
+    if (hoverStartTime.current === null) {
+      hoverStartTime.current = state.clock.elapsedTime
+    }
+
     let progress = 2
     if (hoverStartTime.current !== null) {
       const elapsed = state.clock.elapsedTime - hoverStartTime.current
       progress = elapsed / flipDurationSec
       if (progress >= 1.05) {
-        hoverStartTime.current = null
+        // Hold a brief gap before next auto-trigger
+        if (elapsed > flipDurationSec + 1.2) {
+          hoverStartTime.current = null
+        }
         progress = 2
       }
     }
