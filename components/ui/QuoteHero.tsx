@@ -38,8 +38,8 @@ export function QuoteHero({ animal, quotes, textAlpha }: Props) {
         opacity: textAlpha,
         transition: 'opacity 350ms ease-out',
         maxWidth: '38rem',
-        marginLeft: 'max(2rem, 6vw)',
-        marginRight: 'auto',
+        marginLeft: 'auto',
+        marginRight: 'max(2rem, 10vw)',
       }}
       className="px-8 pt-40 pb-32"
     >

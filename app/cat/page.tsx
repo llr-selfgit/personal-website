@@ -59,8 +59,13 @@ export default function CatHubPage() {
 
         {/* Nav 子页 — D persona "hover 才浮现" */}
         <nav
-          className="max-w-2xl mx-auto px-8 pb-24"
-          style={{ opacity: intro.textAlpha, transition: 'opacity 350ms ease-out' }}
+          className="max-w-2xl px-8 pb-24"
+          style={{
+            opacity: intro.textAlpha,
+            transition: 'opacity 350ms ease-out',
+            marginLeft: 'auto',
+            marginRight: 'max(2rem, 10vw)',
+          }}
         >
           <ul className="flex flex-col md:flex-row gap-8 text-cat-heading opacity-50 hover:opacity-100 transition-opacity duration-700">
             <li>
@@ -77,7 +82,10 @@ export default function CatHubPage() {
         </nav>
 
         {/* Leave-message form (replaces previous contact footer) */}
-        <div className="max-w-2xl mx-auto px-8 pb-32">
+        <div
+          className="max-w-2xl px-8 pb-32"
+          style={{ marginLeft: 'auto', marginRight: 'max(2rem, 10vw)' }}
+        >
           <LeaveMessage animal="cat" voice={voice} textAlpha={intro.textAlpha} />
         </div>
       </div>
