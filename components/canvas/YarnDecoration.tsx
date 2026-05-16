@@ -45,6 +45,8 @@ interface Props {
   strandThreshold?: number
   /** Y-jitter for strand particles (world units). */
   strandJitter?: number
+  /** Cap on strand particle count. Lower = thinner, more line-like. */
+  maxStrandCount?: number
 }
 
 interface BallPool {
@@ -75,6 +77,7 @@ function classify(
   scale: number,
   thresholdFrac: number,
   jitter: number,
+  maxStrandCount: number,
 ): Classified {
   const n = positions.length / 3
 
@@ -151,14 +154,19 @@ function classify(
   }
   const ballRadius = ballRadiusNDC * scale
 
+  // Cap strand particle count to keep the line thin (avoids the "fabric"
+  // look when too many particles pile up along the strand).
+  const strandKeepProb = strandN > maxStrandCount ? maxStrandCount / strandN : 1
+  const finalStrandN = Math.min(strandN, maxStrandCount)
+
   // Allocate pools
   const ballPositions = new Float32Array(ballN * 3)
   const ballColors = new Float32Array(ballN * 3)
   const ballSizes = new Float32Array(ballN)
-  const strandColors = new Float32Array(strandN * 3)
-  const strandBaseSizes = new Float32Array(strandN)
-  const strandT = new Float32Array(strandN)
-  const strandPerpJitter = new Float32Array(strandN)
+  const strandColors = new Float32Array(finalStrandN * 3)
+  const strandBaseSizes = new Float32Array(finalStrandN)
+  const strandT = new Float32Array(finalStrandN)
+  const strandPerpJitter = new Float32Array(finalStrandN)
 
   let bi = 0
   let si = 0
@@ -173,7 +181,7 @@ function classify(
       ballColors[bi * 3 + 2] = colors[i * 3 + 2]
       ballSizes[bi] = 0.55 + Math.random() * 0.55
       bi++
-    } else {
+    } else if (si < finalStrandN && Math.random() < strandKeepProb) {
       strandColors[si * 3] = colors[i * 3]
       strandColors[si * 3 + 1] = colors[i * 3 + 1]
       strandColors[si * 3 + 2] = colors[i * 3 + 2]
@@ -182,20 +190,23 @@ function classify(
       si++
     }
   }
+  const actualStrandN = si
 
-  for (let i = 0; i < strandN; i++) {
-    strandT[i] = strandN > 1 ? i / (strandN - 1) : 0
+  for (let i = 0; i < actualStrandN; i++) {
+    strandT[i] = actualStrandN > 1 ? i / (actualStrandN - 1) : 0
   }
 
   return {
     ball: { positions: ballPositions, colors: ballColors, sizes: ballSizes },
     strand: {
-      positions: new Float32Array(strandN * 3),
-      colors: strandColors,
-      sizes: new Float32Array(strandN),
-      baseSizes: strandBaseSizes,
-      t: strandT,
-      perpJitter: strandPerpJitter,
+      positions: new Float32Array(actualStrandN * 3),
+      colors: actualStrandN === finalStrandN ? strandColors : strandColors.slice(0, actualStrandN * 3),
+      sizes: new Float32Array(actualStrandN),
+      baseSizes:
+        actualStrandN === finalStrandN ? strandBaseSizes : strandBaseSizes.slice(0, actualStrandN),
+      t: actualStrandN === finalStrandN ? strandT : strandT.slice(0, actualStrandN),
+      perpJitter:
+        actualStrandN === finalStrandN ? strandPerpJitter : strandPerpJitter.slice(0, actualStrandN),
     },
     ballRadius,
   }
@@ -208,7 +219,8 @@ export function YarnDecoration({
   count = 15000,
   periodSec = 13,
   strandThreshold = 0.55,
-  strandJitter = 0.018,
+  strandJitter = 0.004,
+  maxStrandCount = 700,
 }: Props) {
   const [data, setData] = useState<Classified | null>(null)
   const ballGroupRef = useRef<THREE.Group>(null!)
@@ -226,10 +238,10 @@ export function YarnDecoration({
       ctx.drawImage(img, 0, 0)
       const imageData = ctx.getImageData(0, 0, img.width, img.height)
       const { positions, colors } = samplePositionsAndColorsFromAlpha(imageData, count, 1)
-      setData(classify(positions, colors, scale, strandThreshold, strandJitter))
+      setData(classify(positions, colors, scale, strandThreshold, strandJitter, maxStrandCount))
     }
     img.src = '/assets/cat/decorations/deco-cat-yarn.png'
-  }, [count, scale, strandThreshold, strandJitter])
+  }, [count, scale, strandThreshold, strandJitter, maxStrandCount])
 
   useFrame((state) => {
     if (!data) return
@@ -264,9 +276,12 @@ export function YarnDecoration({
       const ti = sT[i]
       if (ti <= u + 0.0001) {
         sP[i * 3] = start[0] - ti * travelX
-        const wave1 = 0.022 * Math.sin(ti * 9.7 + sJ[i] * 73)
-        const wave2 = 0.013 * Math.sin(ti * 23.4 + sJ[i] * 31)
-        const wave3 = 0.008 * Math.sin(ti * 47.2 + sJ[i] * 17)
+        // Tight wave amplitudes — yarn line should be a few pixels tall,
+        // not a thick band. Three frequencies with random phases keep it
+        // organic / irregular instead of a perfect sine wave.
+        const wave1 = 0.010 * Math.sin(ti * 8.7 + sJ[i] * 91)
+        const wave2 = 0.005 * Math.sin(ti * 21.3 + sJ[i] * 37)
+        const wave3 = 0.0025 * Math.sin(ti * 53.1 + sJ[i] * 19)
         sP[i * 3 + 1] = strandY + sJ[i] + wave1 + wave2 + wave3
         sP[i * 3 + 2] = start[2]
         sS[i] = sBase[i]
