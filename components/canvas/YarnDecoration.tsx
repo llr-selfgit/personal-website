@@ -1,44 +1,49 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { ParticleField } from './ParticleField'
 import { samplePositionsAndColorsFromAlpha } from '@/lib/particles'
 
 /**
- * Yarn ball decoration with ball + dynamic strand.
+ * Yarn ball with dynamic unspool/respool strand.
  *
- * Two pools, classified once at load from a centroid distance threshold:
- *   - Ball pool: rotates + translates as a rigid body (rolling no-slip).
- *   - Strand pool: each particle has a deployment threshold t_i in [0, 1].
- *     The ball's rolling progress u ∈ [0, 1] gates visibility — a particle
- *     is visible iff t_i ≤ u. Visible particles sit at their assigned
- *     position along the strand line from anchor → ball end. As u grows,
- *     more particles deploy → strand grows. As u shrinks, particles
- *     undeploy in reverse → strand winds back into the ball.
+ * Pipeline at load:
+ *   1. Sample PNG → positions + colors (NDC).
+ *   2. Two-pass classification by distance from centroid:
+ *        - Pass 1: classify against the overall centroid (biased toward
+ *          the strand side).
+ *        - Pass 2: recompute centroid using only "ball" particles from
+ *          pass 1, then reclassify. This removes the strand-bias drift.
+ *   3. Compute actual ball radius = max distance of any ball particle
+ *      from the ball-only centroid (in world units after `scale`).
+ *   4. Ball-local positions are centered on the ball-only centroid.
  *
- * Linear density along the strand stays roughly constant: particles are
- * uniformly distributed in t over the max-length strand, so the visible
- * count scales with current length.
+ * Animation per frame:
+ *   - u = (1 - cos(2π t)) / 2 ∈ [0,1], smooth oscillation.
+ *   - Ball group transform: position (start.x - u·travelX, start.y),
+ *     rotation +distance/radius (CCW outbound, CW inbound, no-slip).
+ *   - Strand particle i is visible iff t_i ≤ u; its position is fixed
+ *     along the line from anchor (start.x) to ball.x at fraction t_i.
+ *     Y stays at floor (start.y − ballRadius) plus jitter + three sine
+ *     waves for an organic curl, never a straight line.
  */
 
 interface Props {
-  /** ball-cloud centroid rest position in world coordinates. */
+  /** ball-center rest position in world coordinates. Strand anchor sits at start.x. */
   start: [number, number, number]
   /** world units of horizontal travel (rolls -travelX..0 from start). */
   travelX: number
-  /** ball world radius (used to lock rotation to translation). */
-  radius: number
   /** scale multiplier applied to sampled NDC positions. */
   scale?: number
   /** total particles requested. */
   count?: number
   /** seconds per full cycle. */
   periodSec?: number
-  /** Distance-from-centroid fraction; outliers above this become strand. */
+  /** Outliers above this fraction (0..1) of max distance become strand. */
   strandThreshold?: number
-  /** Y-jitter for strand particles (world units, organic thickness). */
+  /** Y-jitter for strand particles (world units). */
   strandJitter?: number
 }
 
@@ -49,19 +54,19 @@ interface BallPool {
 }
 
 interface StrandPool {
-  positions: Float32Array    // updated each frame
-  colors: Float32Array        // static (PNG colors)
-  sizes: Float32Array          // updated each frame (baseSize or 0)
-  baseSizes: Float32Array       // when deployed
-  t: Float32Array                // deployment threshold per particle
-  perpJitter: Float32Array     // per-particle Y offset
+  positions: Float32Array  // updated each frame
+  colors: Float32Array      // static
+  sizes: Float32Array        // updated each frame
+  baseSizes: Float32Array     // when deployed
+  t: Float32Array              // deployment threshold
+  perpJitter: Float32Array   // per-particle stable Y offset
 }
 
 interface Classified {
   ball: BallPool
   strand: StrandPool
-  /** ball centroid Y in scaled local coords — used to set ball group Y. */
-  centroidY: number
+  /** actual ball radius in world units (max dist from ball centroid). */
+  ballRadius: number
 }
 
 function classify(
@@ -73,6 +78,7 @@ function classify(
 ): Classified {
   const n = positions.length / 3
 
+  // Pass 1: classify around overall centroid
   let cx = 0
   let cy = 0
   for (let i = 0; i < n; i++) {
@@ -82,24 +88,70 @@ function classify(
   cx /= n
   cy /= n
 
-  const dists = new Float32Array(n)
-  let maxDist = 0
-  for (let i = 0; i < n; i++) {
-    const dx = positions[i * 3] - cx
-    const dy = positions[i * 3 + 1] - cy
-    const d = Math.sqrt(dx * dx + dy * dy)
-    dists[i] = d
-    if (d > maxDist) maxDist = d
+  function classifyAround(centerX: number, centerY: number) {
+    const dists = new Float32Array(n)
+    let maxDist = 0
+    for (let i = 0; i < n; i++) {
+      const dx = positions[i * 3] - centerX
+      const dy = positions[i * 3 + 1] - centerY
+      const d = Math.sqrt(dx * dx + dy * dy)
+      dists[i] = d
+      if (d > maxDist) maxDist = d
+    }
+    return { dists, threshold: maxDist * thresholdFrac }
   }
-  const threshold = maxDist * thresholdFrac
 
+  let { dists, threshold } = classifyAround(cx, cy)
+
+  // Pass 2: recompute centroid using only "ball" particles, then reclassify
+  let bcx = 0
+  let bcy = 0
   let ballN = 0
+  for (let i = 0; i < n; i++) {
+    if (dists[i] <= threshold) {
+      bcx += positions[i * 3]
+      bcy += positions[i * 3 + 1]
+      ballN++
+    }
+  }
+  if (ballN > 0) {
+    bcx /= ballN
+    bcy /= ballN
+  }
+  ;({ dists, threshold } = classifyAround(bcx, bcy))
+
+  // Final ball-only centroid from this pass
+  bcx = 0
+  bcy = 0
+  ballN = 0
   let strandN = 0
   for (let i = 0; i < n; i++) {
-    if (dists[i] <= threshold) ballN++
-    else strandN++
+    if (dists[i] <= threshold) {
+      bcx += positions[i * 3]
+      bcy += positions[i * 3 + 1]
+      ballN++
+    } else {
+      strandN++
+    }
+  }
+  if (ballN > 0) {
+    bcx /= ballN
+    bcy /= ballN
   }
 
+  // Ball radius = max distance of any ball particle from ball-only centroid
+  let ballRadiusNDC = 0
+  for (let i = 0; i < n; i++) {
+    if (dists[i] <= threshold) {
+      const dx = positions[i * 3] - bcx
+      const dy = positions[i * 3 + 1] - bcy
+      const d = Math.sqrt(dx * dx + dy * dy)
+      if (d > ballRadiusNDC) ballRadiusNDC = d
+    }
+  }
+  const ballRadius = ballRadiusNDC * scale
+
+  // Allocate pools
   const ballPositions = new Float32Array(ballN * 3)
   const ballColors = new Float32Array(ballN * 3)
   const ballSizes = new Float32Array(ballN)
@@ -112,8 +164,9 @@ function classify(
   let si = 0
   for (let i = 0; i < n; i++) {
     if (dists[i] <= threshold) {
-      ballPositions[bi * 3] = (positions[i * 3] - cx) * scale
-      ballPositions[bi * 3 + 1] = (positions[i * 3 + 1] - cy) * scale
+      // Ball-local positions centered on the ball-only centroid
+      ballPositions[bi * 3] = (positions[i * 3] - bcx) * scale
+      ballPositions[bi * 3 + 1] = (positions[i * 3 + 1] - bcy) * scale
       ballPositions[bi * 3 + 2] = 0
       ballColors[bi * 3] = colors[i * 3]
       ballColors[bi * 3 + 1] = colors[i * 3 + 1]
@@ -130,8 +183,6 @@ function classify(
     }
   }
 
-  // Assign deployment thresholds uniformly in [0, 1]. Particle index 0
-  // deploys first (anchor end); last index deploys last (ball end).
   for (let i = 0; i < strandN; i++) {
     strandT[i] = strandN > 1 ? i / (strandN - 1) : 0
   }
@@ -139,26 +190,25 @@ function classify(
   return {
     ball: { positions: ballPositions, colors: ballColors, sizes: ballSizes },
     strand: {
-      positions: new Float32Array(strandN * 3), // updated each frame
+      positions: new Float32Array(strandN * 3),
       colors: strandColors,
-      sizes: new Float32Array(strandN), // updated each frame
+      sizes: new Float32Array(strandN),
       baseSizes: strandBaseSizes,
       t: strandT,
       perpJitter: strandPerpJitter,
     },
-    centroidY: cy * scale,
+    ballRadius,
   }
 }
 
 export function YarnDecoration({
   start,
   travelX,
-  radius,
   scale = 1,
   count = 15000,
   periodSec = 13,
   strandThreshold = 0.55,
-  strandJitter = 0.012,
+  strandJitter = 0.018,
 }: Props) {
   const [data, setData] = useState<Classified | null>(null)
   const ballGroupRef = useRef<THREE.Group>(null!)
@@ -181,33 +231,28 @@ export function YarnDecoration({
     img.src = '/assets/cat/decorations/deco-cat-yarn.png'
   }, [count, scale, strandThreshold, strandJitter])
 
-  // Strand anchor world position — fixed at start (ball rest center).
-  // The strand extends FROM this anchor TO the current ball center.
-  const anchorY = useMemo(() => (data ? start[1] + data.centroidY : start[1]), [data, start])
-
   useFrame((state) => {
     if (!data) return
     if (startTime.current === null) startTime.current = state.clock.elapsedTime
     const t = ((state.clock.elapsedTime - startTime.current) % periodSec) / periodSec
-    const u = (1 - Math.cos(t * 2 * Math.PI)) / 2 // 0..1..0, eased at endpoints
+    const u = (1 - Math.cos(t * 2 * Math.PI)) / 2
     const distance = u * travelX
-    // Rolling left on a floor: top of ball moves left → CCW (positive Z rot
-    // when viewed from +Z). Outbound u increases (rotation increases = CCW
-    // each frame); inbound u decreases (rotation decreases = CW each frame).
-    const rotation = +(distance / radius)
-    // Strand lies along the floor at the ball's bottom edge, not the ball
-    // center's horizontal line.
-    const strandY = anchorY - radius
+    const rotation = +(distance / data.ballRadius) // CCW outbound, CW inbound
 
-    // Ball group transform — translate to current ball center, rotate.
+    // Strand floor = ball center Y minus actual ball radius
+    const strandY = start[1] - data.ballRadius
+
+    // Ball group: at (start.x - distance, start.y, start.z). Ball-local
+    // positions are already centered on the ball-only centroid, so the
+    // visible ball mass is at the group's origin.
     if (ballGroupRef.current) {
-      ballGroupRef.current.position.set(start[0] - distance, anchorY, start[2])
+      ballGroupRef.current.position.set(start[0] - distance, start[1], start[2])
       ballGroupRef.current.rotation.z = rotation
     }
 
-    // Strand deployment — irregular: per-particle jitter + two deterministic
-    // sin waves keyed by ti so the strand has organic curl, not a straight
-    // line. Y stays around the floor (strandY).
+    // Strand particles: deployed iff t_i ≤ u; positioned along the segment
+    // from anchor (start.x) to ball.x. Y has stable jitter + 3 sin waves for
+    // organic irregularity.
     const strand = data.strand
     const sP = strand.positions
     const sS = strand.sizes
@@ -219,9 +264,10 @@ export function YarnDecoration({
       const ti = sT[i]
       if (ti <= u + 0.0001) {
         sP[i * 3] = start[0] - ti * travelX
-        const wave1 = 0.018 * Math.sin(ti * 11.3 + sJ[i] * 47)
-        const wave2 = 0.010 * Math.sin(ti * 27.7 + sJ[i] * 19)
-        sP[i * 3 + 1] = strandY + sJ[i] + wave1 + wave2
+        const wave1 = 0.022 * Math.sin(ti * 9.7 + sJ[i] * 73)
+        const wave2 = 0.013 * Math.sin(ti * 23.4 + sJ[i] * 31)
+        const wave3 = 0.008 * Math.sin(ti * 47.2 + sJ[i] * 17)
+        sP[i * 3 + 1] = strandY + sJ[i] + wave1 + wave2 + wave3
         sP[i * 3 + 2] = start[2]
         sS[i] = sBase[i]
       } else {
@@ -241,7 +287,6 @@ export function YarnDecoration({
 
   return (
     <>
-      {/* Strand — positions are world coordinates (not relative to a group). */}
       <group ref={strandGroupRef}>
         <ParticleField
           positions={data.strand.positions}
@@ -249,7 +294,6 @@ export function YarnDecoration({
           sizes={data.strand.sizes}
         />
       </group>
-      {/* Ball — group transform animated. */}
       <group ref={ballGroupRef}>
         <ParticleField
           positions={data.ball.positions}
