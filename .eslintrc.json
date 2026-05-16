@@ -2,7 +2,28 @@
   "extends": ["next/core-web-vitals", "prettier"],
   "rules": {
     "react/no-unknown-property": ["error", {
-      "ignore": ["args", "position", "rotation", "scale", "intensity", "attach", "object", "geometry", "material"]
+      "ignore": [
+        "args",
+        "position",
+        "rotation",
+        "scale",
+        "intensity",
+        "attach",
+        "object",
+        "geometry",
+        "material",
+        "transparent",
+        "depthWrite",
+        "depthTest",
+        "side",
+        "wireframe",
+        "blending",
+        "fog",
+        "uniforms",
+        "vertexShader",
+        "fragmentShader",
+        "colorWrite"
+      ]
     }]
   }
 }
