@@ -7,46 +7,44 @@ import { ParticleField } from './ParticleField'
 import { samplePositionsAndColorsFromAlpha } from '@/lib/particles'
 
 /**
- * Book stack decoration — particle-ized from the bg-removed books PNG,
- * with per-particle RGB sampled from the source so the stack reproduces
- * the original pencil-sketch look as a dot painting.
+ * Book stack — particle reproduction of the bg-removed books PNG.
  *
- * Hover interaction (Step 2A · "page ruffle"):
- *   - Stack is static at rest.
- *   - On pointer enter, a single soft wave sweeps left → right across the
- *     "page region" (top portion of the stack — where the open book sits).
- *   - Each particle in the wave's band lifts vertically (sin envelope), so
- *     it looks like a breeze passing over the open pages. Below the page
- *     region, particles never move — the stack stays put.
- *   - One wave per hover-enter. Subsequent hover-enters during a running
- *     wave are ignored (no overlap); a fresh wave starts on the next
- *     hover-enter after the current one completes.
+ * Hover interaction: real page-flip. The top thin slice of particles
+ * (the "page") rotates around the spine axis (the leftmost X of those
+ * page particles) — every page particle traces a half-circle from its
+ * rest position over the spine and back. Non-page particles (the lower
+ * book stack) never move.
+ *
+ *   - θ(t) = π * sin(t · π), t ∈ [0, 1]: page lifts up, peaks vertical
+ *     at t=0.5 (θ=π, flipped over), returns to rest at t=1 (θ=0).
+ *   - Per page particle, distance r from spine = baseX - spineX.
+ *     During rotation: position = (spineX + r·cos θ, baseY, r·sin θ).
+ *     So the page rotates around the spine in the XZ plane while Y
+ *     stays fixed (no vertical drift).
+ *
+ * Hover-enter triggers one flip cycle; subsequent enters during a
+ * running flip are ignored.
  */
+
 interface Props {
-  /** Centroid world position of the book pile. */
   position: [number, number, number]
-  /** Multiplier applied to PNG-sampled NDC positions → world units. */
   scale?: number
-  /** Particle count requested. */
   count?: number
-  /** Wave traversal duration in seconds (single sweep, left → right). */
-  waveDurationSec?: number
+  /** Duration of one full flip cycle in seconds (lift + return). */
+  flipDurationSec?: number
   /**
-   * Fraction of the stack's height (from top) treated as "pages" and
-   * reactive to the wave. 0..1. Default 0.3 = top 30%.
+   * Fraction of the stack's height (from top) treated as the "page" and
+   * flipped. 0..1, default 0.18 = top 18%.
    */
   pageRegionFrac?: number
-  /** Max vertical lift, as fraction of scale (world units). */
-  liftFrac?: number
 }
 
 export function BooksDecoration({
   position,
   scale = 0.5,
   count = 12000,
-  waveDurationSec = 1.4,
-  pageRegionFrac = 0.3,
-  liftFrac = 0.16,
+  flipDurationSec = 1.8,
+  pageRegionFrac = 0.18,
 }: Props) {
   const [data, setData] = useState<{
     positions: Float32Array
@@ -56,24 +54,21 @@ export function BooksDecoration({
 
   const groupRef = useRef<THREE.Group>(null!)
   const pointsRef = useRef<THREE.Points | null>(null)
-  // Per-particle base (rest) position in local coords. Recomputed once at load.
   const baseX = useRef<Float32Array | null>(null)
   const baseY = useRef<Float32Array | null>(null)
-  // When non-null, holds the elapsed-time snapshot at hover-enter; the
-  // current wave is in flight.
+  // Precomputed per particle: 1 if it's in the page region, 0 otherwise.
+  const isPage = useRef<Uint8Array | null>(null)
+  // Per page particle, r = baseX - spineX (≥ 0 since spine = leftmost X
+  // of page particles). For non-page particles, r is 0 and unused.
+  const pageR = useRef<Float32Array | null>(null)
+  const spineX = useRef<number>(0)
   const hoverStartTime = useRef<number | null>(null)
-  // Latest elapsed time, refreshed each frame. Read from event handlers
-  // (which don't get a state.clock reference).
   const latestTime = useRef(0)
 
   useEffect(() => {
-    // eslint-disable-next-line no-console
-    console.log('[BooksDecoration] mounting, loading PNG')
     const img = new Image()
     img.crossOrigin = 'anonymous'
     img.onload = () => {
-      // eslint-disable-next-line no-console
-      console.log('[BooksDecoration] PNG loaded', img.width, 'x', img.height)
       const c = document.createElement('canvas')
       c.width = img.width
       c.height = img.height
@@ -85,18 +80,43 @@ export function BooksDecoration({
       for (let i = 0; i < positions.length; i++) positions[i] *= scale
       const sizes = new Float32Array(n)
       for (let i = 0; i < n; i++) sizes[i] = 0.55 + Math.random() * 0.5
+
       const bx = new Float32Array(n)
       const by = new Float32Array(n)
+      const pageFlag = new Uint8Array(n)
       for (let i = 0; i < n; i++) {
         bx[i] = positions[i * 3]
         by[i] = positions[i * 3 + 1]
       }
+
+      // Identify page particles = top pageRegionFrac of the stack's height.
+      // Use percentile on baseY so it adapts to actual book bbox.
+      const sortedY = Float32Array.from(by).sort()
+      const cutoff = sortedY[Math.floor(n * (1 - pageRegionFrac))]
+      let pageMinX = Infinity
+      for (let i = 0; i < n; i++) {
+        if (by[i] >= cutoff) {
+          pageFlag[i] = 1
+          if (bx[i] < pageMinX) pageMinX = bx[i]
+        }
+      }
+      const localSpineX = pageMinX
+
+      // Precompute r for each particle (only meaningful where pageFlag = 1).
+      const r = new Float32Array(n)
+      for (let i = 0; i < n; i++) {
+        if (pageFlag[i] === 1) r[i] = bx[i] - localSpineX
+      }
+
       baseX.current = bx
       baseY.current = by
+      isPage.current = pageFlag
+      pageR.current = r
+      spineX.current = localSpineX
       setData({ positions, colors, sizes })
     }
     img.src = '/assets/cat/decorations/deco-cat-books.png'
-  }, [count, scale])
+  }, [count, scale, pageRegionFrac])
 
   useEffect(() => {
     if (groupRef.current && data) {
@@ -106,38 +126,36 @@ export function BooksDecoration({
 
   useFrame((state) => {
     latestTime.current = state.clock.elapsedTime
-    if (!data || !baseX.current || !baseY.current) return
+    if (
+      !data ||
+      !baseX.current ||
+      !baseY.current ||
+      !isPage.current ||
+      !pageR.current
+    )
+      return
 
-    // DEBUG: auto-trigger wave every cycle (no hover required) — so we can
-    // see whether the animation runs regardless of hover detection.
-    if (hoverStartTime.current === null) {
-      hoverStartTime.current = state.clock.elapsedTime
-    }
-
-    // Compute wave progress; >= 1 means inactive.
-    let waveProgress = 2
+    let progress = 2
     if (hoverStartTime.current !== null) {
       const elapsed = state.clock.elapsedTime - hoverStartTime.current
-      waveProgress = elapsed / waveDurationSec
-      if (waveProgress >= 1.05) {
+      progress = elapsed / flipDurationSec
+      if (progress >= 1.05) {
         hoverStartTime.current = null
-        waveProgress = 2
+        progress = 2
       }
     }
 
     const positions = data.positions
     const n = positions.length / 3
 
-    if (waveProgress >= 1) {
-      // Wave done — restore particles to their base positions exactly once,
-      // then early-return until the next wave.
+    if (progress >= 1) {
+      // Inactive — restore page particles to base.
       let dirty = false
       for (let i = 0; i < n; i++) {
-        const px = baseX.current[i]
-        const py = baseY.current[i]
-        if (positions[i * 3 + 1] !== py || positions[i * 3] !== px) {
-          positions[i * 3] = px
-          positions[i * 3 + 1] = py
+        if (positions[i * 3 + 2] !== 0 || positions[i * 3] !== baseX.current[i]) {
+          positions[i * 3] = baseX.current[i]
+          positions[i * 3 + 1] = baseY.current[i]
+          positions[i * 3 + 2] = 0
           dirty = true
         }
       }
@@ -148,32 +166,24 @@ export function BooksDecoration({
       return
     }
 
-    // Wave active. Wave front travels from local x = -scale (left/spine) to
-    // +scale (right/page-edge) as progress goes 0 → 1.
-    const waveFront = -scale + waveProgress * (2 * scale)
-    const waveWidth = scale * 0.3
-    // Local Y threshold above which particles are in the page region.
-    // For pageRegionFrac=0.3, threshold = scale * (1 - 0.6) = 0.4*scale.
-    const topThreshold = scale * (1 - 2 * pageRegionFrac)
+    // θ goes 0 → π → 0 across the cycle (lift + return).
+    const theta = Math.PI * Math.sin(progress * Math.PI)
+    const cosT = Math.cos(theta)
+    const sinT = Math.sin(theta)
+    const sX = spineX.current
+    const flag = isPage.current
+    const rArr = pageR.current
 
     for (let i = 0; i < n; i++) {
-      const px = baseX.current[i]
-      const py = baseY.current[i]
-      if (py < topThreshold) {
-        positions[i * 3] = px
-        positions[i * 3 + 1] = py
-        continue
-      }
-      const dx = px - waveFront
-      const absDx = Math.abs(dx)
-      if (absDx < waveWidth) {
-        const intensity = 1 - absDx / waveWidth
-        const lift = Math.sin(intensity * Math.PI) * scale * liftFrac
-        positions[i * 3] = px
-        positions[i * 3 + 1] = py + lift
+      if (flag[i] === 1) {
+        const r = rArr[i]
+        positions[i * 3] = sX + r * cosT
+        positions[i * 3 + 1] = baseY.current[i]
+        positions[i * 3 + 2] = r * sinT
       } else {
-        positions[i * 3] = px
-        positions[i * 3 + 1] = py
+        positions[i * 3] = baseX.current[i]
+        positions[i * 3 + 1] = baseY.current[i]
+        positions[i * 3 + 2] = 0
       }
     }
     if (pointsRef.current?.geometry.attributes.position) {
@@ -184,8 +194,6 @@ export function BooksDecoration({
   if (!data) return null
 
   const handleEnter = () => {
-    // eslint-disable-next-line no-console
-    console.log('[BooksDecoration] hover detected at', latestTime.current.toFixed(2))
     if (hoverStartTime.current === null) {
       hoverStartTime.current = latestTime.current
     }
@@ -194,17 +202,14 @@ export function BooksDecoration({
   return (
     <group ref={groupRef} position={position}>
       <ParticleField positions={data.positions} colors={data.colors} sizes={data.sizes} />
-      {/* DEBUG: visible hover plane so the user can confirm where the hover
-          target sits. Slightly larger than the particle cloud to give some
-          hover tolerance. Both onPointerOver and onPointerEnter wired to
-          rule out subtle event-firing differences. */}
+      {/* Transparent plane for raycast / hover detection. */}
       <mesh
         onPointerEnter={handleEnter}
         onPointerOver={handleEnter}
-        position={[0, 0, 1]}
+        position={[0, 0, 0.6]}
       >
-        <planeGeometry args={[8, 5]} />
-        <meshBasicMaterial color="#ff00ff" transparent opacity={0.35} depthWrite={false} side={THREE.DoubleSide} />
+        <planeGeometry args={[2.4 * scale, 2.4 * scale]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} side={THREE.DoubleSide} />
       </mesh>
     </group>
   )
