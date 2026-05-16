@@ -52,9 +52,9 @@ export default function CatHubPage() {
         <div
           style={{
             position: 'absolute',
-            top: '50%',
+            bottom: 0,
             left: '50%',
-            transform: 'translate(-50%, -50%)',
+            transform: 'translateX(-50%)',
             width: 'max(100vw, calc(100vh * 1672 / 941))',
             height: 'max(100vh, calc(100vw * 941 / 1672))',
           }}
