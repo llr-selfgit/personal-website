@@ -191,7 +191,13 @@ export function YarnDecoration({
     const t = ((state.clock.elapsedTime - startTime.current) % periodSec) / periodSec
     const u = (1 - Math.cos(t * 2 * Math.PI)) / 2 // 0..1..0, eased at endpoints
     const distance = u * travelX
-    const rotation = -(distance / radius)
+    // Rolling left on a floor: top of ball moves left → CCW (positive Z rot
+    // when viewed from +Z). Outbound u increases (rotation increases = CCW
+    // each frame); inbound u decreases (rotation decreases = CW each frame).
+    const rotation = +(distance / radius)
+    // Strand lies along the floor at the ball's bottom edge, not the ball
+    // center's horizontal line.
+    const strandY = anchorY - radius
 
     // Ball group transform — translate to current ball center, rotate.
     if (ballGroupRef.current) {
@@ -199,7 +205,9 @@ export function YarnDecoration({
       ballGroupRef.current.rotation.z = rotation
     }
 
-    // Strand deployment — set each particle's position and size based on u.
+    // Strand deployment — irregular: per-particle jitter + two deterministic
+    // sin waves keyed by ti so the strand has organic curl, not a straight
+    // line. Y stays around the floor (strandY).
     const strand = data.strand
     const sP = strand.positions
     const sS = strand.sizes
@@ -210,9 +218,10 @@ export function YarnDecoration({
     for (let i = 0; i < n; i++) {
       const ti = sT[i]
       if (ti <= u + 0.0001) {
-        // Deployed: position along the max-length strand from anchor.
         sP[i * 3] = start[0] - ti * travelX
-        sP[i * 3 + 1] = anchorY + sJ[i]
+        const wave1 = 0.018 * Math.sin(ti * 11.3 + sJ[i] * 47)
+        const wave2 = 0.010 * Math.sin(ti * 27.7 + sJ[i] * 19)
+        sP[i * 3 + 1] = strandY + sJ[i] + wave1 + wave2
         sP[i * 3 + 2] = start[2]
         sS[i] = sBase[i]
       } else {
