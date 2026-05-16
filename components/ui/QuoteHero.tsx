@@ -23,9 +23,11 @@ const FONT_CLASS: Record<Animal, string> = {
 }
 
 export function QuoteHero({ animal, quotes, textAlpha }: Props) {
-  const [index, setIndex] = useState<number>(() => Math.floor(Math.random() * quotes.length))
+  // Start at index 0 so SSR + first client render match (avoids hydration
+  // mismatch error #418/#423/#425). The randomization happens after hydration
+  // via useEffect, replacing the initial pick.
+  const [index, setIndex] = useState<number>(0)
 
-  // Re-pick on remount (e.g. via route revisit); index is already random on first render
   useEffect(() => {
     setIndex(Math.floor(Math.random() * quotes.length))
   }, [quotes])
