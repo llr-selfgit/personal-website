@@ -56,15 +56,15 @@ export function CatDecorations({ textAlpha = 1 }: Props) {
         />
       </div>
 
-      {/* ───── 茶杯 — static cup, three drifting steam wisps ───── */}
+      {/* ───── 茶杯 — static cup, sized to fully cover bg painted teacup ───── */}
       <div
         style={{
           position: 'absolute',
-          left: 'min(22vw, 360px)',
-          top: 'min(56vh, 560px)',
-          width: 'clamp(70px, 7vw, 100px)',
+          left: 'min(28vw, 470px)',
+          top: 'min(58vh, 580px)',
+          width: 'clamp(110px, 9vw, 150px)',
           filter: 'sepia(0.3) brightness(0.95)',
-          opacity: 0.82,
+          opacity: 0.95,
         }}
       >
         {/* Steam wisps — three with different sizes, positions, delays.
