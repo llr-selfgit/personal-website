@@ -50,8 +50,8 @@ export function CatDecorations({ textAlpha = 1 }: Props) {
       <div
         style={{
           position: 'absolute',
-          left: '27%',
-          top: '50%',
+          left: '28%',
+          top: '47%',
           width: '9%',
           filter: 'sepia(0.3) brightness(0.95)',
           opacity: 0.95,
