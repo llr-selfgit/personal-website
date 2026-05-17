@@ -3,6 +3,7 @@
 import { PersistentCanvas } from '../PersistentCanvas'
 import { AnimalCharacter } from '../AnimalCharacter'
 import { YarnDecoration } from '../YarnDecoration'
+import { BooksFrames } from '../BooksFrames'
 import { useSiteStore } from '@/lib/store'
 import type { Animal } from '@/lib/types'
 
@@ -49,9 +50,14 @@ export function HubScene({ animal, skipIntro }: Props) {
           periodSec={13}
         />
       )}
-      {/* Books are now an HTML sprite animation in CatDecorations (4 frames
-          of the same hand-drawn stack). The particle BooksDecoration is
-          retired — sprite frames match the bg painting style exactly. */}
+      {animal === 'cat' && (
+        <BooksFrames
+          position={[-3.5, -1.6, 0]}
+          scale={0.55}
+          count={6000}
+          flipDurationSec={1.8}
+        />
+      )}
     </PersistentCanvas>
   )
 }
