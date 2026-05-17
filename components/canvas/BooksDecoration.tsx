@@ -41,6 +41,13 @@ interface Props {
   pageRegionFrac?: number
   /** Peak Y lift at θ=π/2, as fraction of scale. Adds visible elevation. */
   liftFrac?: number
+  /**
+   * Peak rotation angle as a fraction of π. 0.5 = page rises exactly to
+   * vertical and falls back. 1.0 = full 180° flip-over. Default 0.55 — page
+   * leans slightly past vertical (matching the user's reference photos)
+   * before falling back, never completing the turn.
+   */
+  peakAngleFrac?: number
 }
 
 export function BooksDecoration({
@@ -50,6 +57,7 @@ export function BooksDecoration({
   flipDurationSec = 1.8,
   pageRegionFrac = 0.4,
   liftFrac = 0.1,
+  peakAngleFrac = 0.55,
 }: Props) {
   const [data, setData] = useState<{
     positions: Float32Array
@@ -201,19 +209,19 @@ export function BooksDecoration({
       return
     }
 
-    // θ goes 0 → π → 0 across the cycle. Rotation in the XY viewport plane
-    // around the spine line at X=spineX (each page particle hinges at its
-    // own projection onto the spine, i.e. (spineX, baseY)):
-    //   θ=0:   page flat to the right of spine.
-    //   θ=π/2: page is standing UP — particles that were far from the spine
-    //          (large r) are now high (baseY + r), forming the visual of a
-    //          page curtain rising vertically from the spine.
-    //   θ=π:   page is mirrored, lying flat on the LEFT of spine (covering
-    //          the original left-page area, like a real page that finished
-    //          its turn).
-    // Z stays 0 — the lift is in viewport Y, not depth-Z, so a top-down
-    // camera sees the page rise visibly instead of collapsing edge-on.
-    const theta = Math.PI * Math.sin(progress * Math.PI)
+    // θ goes 0 → peakAngleFrac·π → 0 across the cycle. Rotation in the XY
+    // viewport plane around the spine line at X=spineX (each page particle
+    // hinges at (spineX, baseY)):
+    //   θ=0:        page flat to the right of spine (rest).
+    //   θ=peakθ:    page leans up — peakAngleFrac controls how far. 0.5 = exactly
+    //               vertical; 0.55 = slightly past vertical (matches reference);
+    //               1.0 = full 180° flip-over.
+    //   θ back to 0: page falls back to rest.
+    // The page never completes a full flip — it lifts up, peaks, and falls
+    // back down on the same side.
+    // Z stays 0 — lift is in viewport Y, not depth-Z, so a top-down camera
+    // sees the page rise visibly.
+    const theta = peakAngleFrac * Math.PI * Math.sin(progress * Math.PI)
     const cosT = Math.cos(theta)
     const sinT = Math.sin(theta)
     const sX = spineX.current
