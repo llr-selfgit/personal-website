@@ -83,7 +83,11 @@ export function CatDecorations({ textAlpha = 1 }: Props) {
       style={{
         position: 'absolute',
         inset: 0,
-        zIndex: 1,
+        // Must be ABOVE the PersistentCanvas (zIndex 2 in fillParent mode)
+        // so the books hover-target HTML div catches mouse events first.
+        // Otherwise the canvas (which has pointer-events:auto for R3F event
+        // detection) swallows them.
+        zIndex: 3,
         opacity: textAlpha,
         transition: 'opacity 450ms ease-out',
         pointerEvents: 'none',
