@@ -55,7 +55,7 @@ export function HubScene({ animal, skipIntro }: Props) {
           position={[-3.4, -1.7, 0]}
           scale={0.5}
           count={12000}
-          pageRegionFrac={0.08}
+          pageRegionFrac={0.22}
         />
       )}
     </PersistentCanvas>

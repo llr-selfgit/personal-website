@@ -63,12 +63,13 @@ export function BooksDecoration({
   const baseY = useRef<Float32Array | null>(null)
   // Precomputed per particle: 1 if it's in the page region, 0 otherwise.
   const isPage = useRef<Uint8Array | null>(null)
-  // Per page particle, r = spineY - baseY (≥ 0, distance from horizontal
-  // spine going downward). For non-page particles, r is 0 and unused.
+  // Per page particle, r = baseX - spineX (> 0 since only right-of-spine
+  // particles are flagged as page). For non-page particles, r is 0.
   const pageR = useRef<Float32Array | null>(null)
-  // Spine is a horizontal axis at the top of the page region. Pages
-  // rotate UP around this axis (page bottom edge rises forward).
-  const spineY = useRef<number>(0)
+  // Spine is a vertical axis at the horizontal middle of the page region
+  // (the binding of the open book). Right-half of the page rotates around
+  // this axis in the XZ plane.
+  const spineX = useRef<number>(0)
   const hoverStartTime = useRef<number | null>(null)
   const latestTime = useRef(0)
 
@@ -110,23 +111,26 @@ export function BooksDecoration({
       }
 
       // Identify the page region: top pageRegionFrac of particles by Y.
-      // The spine is a horizontal axis at the TOP of this region — pages
-      // rotate UP around it (bottom edge lifts forward), like a sketchbook
-      // / notepad being flipped open.
+      // Compute the horizontal midpoint of these particles — that's the
+      // binding (spine) of the open book. Then only flag particles to the
+      // RIGHT of the spine for flipping; they swing up and over to the
+      // left around the spine like a real page being turned.
       const sortedY = Float32Array.from(by).sort()
       const cutoff = sortedY[Math.floor(n * (1 - pageRegionFrac))]
-      let pageMaxY = -Infinity
-      for (let i = 0; i < n; i++) {
-        if (by[i] >= cutoff && by[i] > pageMaxY) pageMaxY = by[i]
-      }
-      // Spine sits a hair above the top of the page particles so r is
-      // strictly positive for every page particle.
-      const localSpineY = pageMaxY + 0.001
-      const r = new Float32Array(n)
+      let pageMinX = Infinity
+      let pageMaxX = -Infinity
       for (let i = 0; i < n; i++) {
         if (by[i] >= cutoff) {
+          if (bx[i] < pageMinX) pageMinX = bx[i]
+          if (bx[i] > pageMaxX) pageMaxX = bx[i]
+        }
+      }
+      const localSpineX = (pageMinX + pageMaxX) / 2
+      const r = new Float32Array(n)
+      for (let i = 0; i < n; i++) {
+        if (by[i] >= cutoff && bx[i] > localSpineX) {
           pageFlag[i] = 1
-          r[i] = localSpineY - by[i]
+          r[i] = bx[i] - localSpineX
         }
       }
 
@@ -134,7 +138,7 @@ export function BooksDecoration({
       baseY.current = by
       isPage.current = pageFlag
       pageR.current = r
-      spineY.current = localSpineY
+      spineX.current = localSpineX
       setData({ positions, colors, sizes })
     }
     img.src = '/assets/cat/decorations/deco-cat-books.png'
@@ -197,26 +201,27 @@ export function BooksDecoration({
       return
     }
 
-    // θ goes 0 → π → 0 across the cycle (lift + return). Rotation is in
-    // the YZ plane around the horizontal spine axis at spineY: the page's
-    // bottom edge (highest r) lifts forward in Z, peaks vertical at θ=π/2,
-    // continues over to land behind the spine at θ=π, then reverses.
+    // θ goes 0 → π → 0 across the cycle. Rotation in XZ plane around the
+    // vertical spine axis at spineX: right-of-spine particles swing up
+    // through θ=π/2 (page standing vertical, edge-on to camera, sticking
+    // out at +Z), then over to the left at θ=π (page laid flat on the
+    // other side of the spine), then reverses to rest.
     const theta = Math.PI * Math.sin(progress * Math.PI)
     const cosT = Math.cos(theta)
     const sinT = Math.sin(theta)
-    const sY = spineY.current
+    const sX = spineX.current
     const flag = isPage.current
     const rArr = pageR.current
-    // Tiny extra forward push at the apex so the apex doesn't look exactly
-    // edge-on to the camera (it'd vanish into a line).
-    const apexBoost = sinT * scale * liftFrac
+    // Small Y lift so the page is visibly elevated at apex (otherwise the
+    // vertical page edge-on to the camera collapses into a thin line).
+    const liftY = Math.sin(theta) * scale * liftFrac
 
     for (let i = 0; i < n; i++) {
       if (flag[i] === 1) {
         const r = rArr[i]
-        positions[i * 3] = baseX.current[i]
-        positions[i * 3 + 1] = sY - r * cosT
-        positions[i * 3 + 2] = r * sinT + apexBoost
+        positions[i * 3] = sX + r * cosT
+        positions[i * 3 + 1] = baseY.current[i] + liftY
+        positions[i * 3 + 2] = r * sinT
       } else {
         positions[i * 3] = baseX.current[i]
         positions[i * 3 + 1] = baseY.current[i]
