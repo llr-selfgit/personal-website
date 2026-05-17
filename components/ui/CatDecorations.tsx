@@ -65,17 +65,27 @@ export function CatDecorations({ textAlpha = 1 }: Props) {
     return () => cancelAnimationFrame(raf)
   }, [bookHoverTrigger])
 
-  // Compute per-frame opacities: two adjacent frames crossfade based on
-  // the fractional part of frameValue.
+  // Compute per-frame opacities + a motion-blur intensity. Crossfading 4
+  // hand-drawn frames in adjacent-pair mode shows visible double-image
+  // ghosting halfway through each transition. Two tricks soften it:
+  //   1. Cosine-eased opacity ramp (slower at start/end, faster in middle)
+  //      so the eye spends less time looking at obvious 50/50 blends.
+  //   2. CSS blur peaking at frac=0.5 — acts like motion blur on a
+  //      camera capturing fast movement, papering over the discontinuity.
   const opacities = new Array<number>(NUM_BOOK_FRAMES).fill(0)
   const frameLow = Math.floor(frameValue)
   const frac = frameValue - frameLow
+  const easedFrac = 0.5 - 0.5 * Math.cos(Math.PI * frac)
   if (frameLow >= NUM_BOOK_FRAMES - 1) {
     opacities[NUM_BOOK_FRAMES - 1] = 1
   } else {
-    opacities[frameLow] = 1 - frac
-    opacities[frameLow + 1] = frac
+    opacities[frameLow] = 1 - easedFrac
+    opacities[frameLow + 1] = easedFrac
   }
+  // Blur peaks at 4·0.5·0.5 = 1; scale to px range.
+  const blurPx = frameValue > 0 && frameLow < NUM_BOOK_FRAMES - 1
+    ? 4 * frac * (1 - frac) * 5
+    : 0
 
   return (
     <div
@@ -104,7 +114,8 @@ export function CatDecorations({ textAlpha = 1 }: Props) {
           height: '30%',
           pointerEvents: 'auto',
           cursor: 'default',
-          filter: 'sepia(0.3) brightness(0.95)',
+          filter: `sepia(0.3) brightness(0.95) blur(${blurPx}px)`,
+          willChange: 'filter',
         }}
       >
         {Array.from({ length: NUM_BOOK_FRAMES }, (_, i) => (
