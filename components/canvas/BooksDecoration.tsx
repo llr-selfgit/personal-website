@@ -201,27 +201,31 @@ export function BooksDecoration({
       return
     }
 
-    // θ goes 0 → π → 0 across the cycle. Rotation in XZ plane around the
-    // vertical spine axis at spineX: right-of-spine particles swing up
-    // through θ=π/2 (page standing vertical, edge-on to camera, sticking
-    // out at +Z), then over to the left at θ=π (page laid flat on the
-    // other side of the spine), then reverses to rest.
+    // θ goes 0 → π → 0 across the cycle. Rotation in the XY viewport plane
+    // around the spine line at X=spineX (each page particle hinges at its
+    // own projection onto the spine, i.e. (spineX, baseY)):
+    //   θ=0:   page flat to the right of spine.
+    //   θ=π/2: page is standing UP — particles that were far from the spine
+    //          (large r) are now high (baseY + r), forming the visual of a
+    //          page curtain rising vertically from the spine.
+    //   θ=π:   page is mirrored, lying flat on the LEFT of spine (covering
+    //          the original left-page area, like a real page that finished
+    //          its turn).
+    // Z stays 0 — the lift is in viewport Y, not depth-Z, so a top-down
+    // camera sees the page rise visibly instead of collapsing edge-on.
     const theta = Math.PI * Math.sin(progress * Math.PI)
     const cosT = Math.cos(theta)
     const sinT = Math.sin(theta)
     const sX = spineX.current
     const flag = isPage.current
     const rArr = pageR.current
-    // Small Y lift so the page is visibly elevated at apex (otherwise the
-    // vertical page edge-on to the camera collapses into a thin line).
-    const liftY = Math.sin(theta) * scale * liftFrac
 
     for (let i = 0; i < n; i++) {
       if (flag[i] === 1) {
         const r = rArr[i]
         positions[i * 3] = sX + r * cosT
-        positions[i * 3 + 1] = baseY.current[i] + liftY
-        positions[i * 3 + 2] = r * sinT
+        positions[i * 3 + 1] = baseY.current[i] + r * sinT
+        positions[i * 3 + 2] = 0
       } else {
         positions[i * 3] = baseX.current[i]
         positions[i * 3 + 1] = baseY.current[i]
