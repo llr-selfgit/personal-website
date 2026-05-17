@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useSiteStore } from '@/lib/store'
 
 /**
@@ -12,26 +12,69 @@ import { useSiteStore } from '@/lib/store'
  * that container, so they always align with the bg painting features
  * regardless of viewport size or aspect.
  *
- * Hover-target for the particle book stack (which lives in the canvas
- * one stacking-level back) is an HTML div here — R3F's pointer events
- * don't fire reliably when the canvas sits inside a negative-z-index
- * scene wrapper, so we detect hover in HTML and signal the canvas via
- * Zustand (bookHoverTrigger increments).
+ * The books pile uses a 4-frame sprite animation: hover triggers a
+ * forward-then-back cycle through frames 0 → 3 → 0, crossfading between
+ * adjacent frames. PNGs are hand-illustrated states of the same stack
+ * (flat / lifting / vertical / past-vertical), so the animation matches
+ * the bg painting's drawing style exactly.
  */
 
 interface Props {
   textAlpha?: number
 }
 
+const BOOK_FLIP_DURATION_MS = 1800
+const NUM_BOOK_FRAMES = 4
+
 export function CatDecorations({ textAlpha = 1 }: Props) {
+  const bookHoverTrigger = useSiteStore((s) => s.bookHoverTrigger)
   const triggerBookHover = useSiteStore((s) => s.triggerBookHover)
-  // Debounce: ignore re-entries while a flip is already running (1.8s).
   const lastTrigger = useRef(0)
+
   const handleBookEnter = () => {
     const now = performance.now()
-    if (now - lastTrigger.current < 1800) return
+    if (now - lastTrigger.current < BOOK_FLIP_DURATION_MS) return
     lastTrigger.current = now
     triggerBookHover()
+  }
+
+  // Sprite frame interpolation. frameValue ∈ [0, NUM_BOOK_FRAMES - 1].
+  // It animates 0 → (NUM_FRAMES-1) → 0 over BOOK_FLIP_DURATION_MS via a
+  // sin envelope on every increment of bookHoverTrigger.
+  const [frameValue, setFrameValue] = useState(0)
+  const lastHandled = useRef(0)
+
+  useEffect(() => {
+    if (bookHoverTrigger === lastHandled.current) return
+    lastHandled.current = bookHoverTrigger
+
+    let raf = 0
+    let startTime: number | null = null
+    const tick = (now: number) => {
+      if (startTime === null) startTime = now
+      const elapsed = now - startTime
+      const progress = Math.min(1, elapsed / BOOK_FLIP_DURATION_MS)
+      // Sin envelope: 0 → 1 → 0. Multiply by max frame index for fractional
+      // frame position.
+      const v = (NUM_BOOK_FRAMES - 1) * Math.sin(progress * Math.PI)
+      setFrameValue(v)
+      if (progress < 1) raf = requestAnimationFrame(tick)
+      else setFrameValue(0)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [bookHoverTrigger])
+
+  // Compute per-frame opacities: two adjacent frames crossfade based on
+  // the fractional part of frameValue.
+  const opacities = new Array<number>(NUM_BOOK_FRAMES).fill(0)
+  const frameLow = Math.floor(frameValue)
+  const frac = frameValue - frameLow
+  if (frameLow >= NUM_BOOK_FRAMES - 1) {
+    opacities[NUM_BOOK_FRAMES - 1] = 1
+  } else {
+    opacities[frameLow] = 1 - frac
+    opacities[frameLow + 1] = frac
   }
 
   return (
@@ -46,20 +89,40 @@ export function CatDecorations({ textAlpha = 1 }: Props) {
         pointerEvents: 'none',
       }}
     >
-      {/* Invisible HTML hover target for the particle book stack in the
-          canvas. Positioned by % so it tracks the scene at any viewport. */}
+      {/* ───── 书堆 — 4-frame sprite animation, hover-triggered ───── */}
       <div
         onMouseEnter={handleBookEnter}
         style={{
           position: 'absolute',
-          left: '4%',
+          left: '2%',
           bottom: '0',
-          width: '14%',
-          height: '24%',
+          width: '17%',
+          height: '30%',
           pointerEvents: 'auto',
           cursor: 'default',
+          filter: 'sepia(0.3) brightness(0.95)',
         }}
-      />
+      >
+        {Array.from({ length: NUM_BOOK_FRAMES }, (_, i) => (
+          <img
+            key={i}
+            src={`/assets/cat/decorations/books-frame-${i}.png`}
+            alt=""
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+              objectPosition: 'bottom left',
+              opacity: opacities[i],
+              pointerEvents: 'none',
+              userSelect: 'none',
+            }}
+            draggable={false}
+          />
+        ))}
+      </div>
 
       {/* ───── 茶杯 — overlays the bg painted teacup (% of scene) ───── */}
       <div
