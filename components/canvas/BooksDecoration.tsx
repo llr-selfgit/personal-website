@@ -63,10 +63,12 @@ export function BooksDecoration({
   const baseY = useRef<Float32Array | null>(null)
   // Precomputed per particle: 1 if it's in the page region, 0 otherwise.
   const isPage = useRef<Uint8Array | null>(null)
-  // Per page particle, r = baseX - spineX (≥ 0 since spine = leftmost X
-  // of page particles). For non-page particles, r is 0 and unused.
+  // Per page particle, r = spineY - baseY (≥ 0, distance from horizontal
+  // spine going downward). For non-page particles, r is 0 and unused.
   const pageR = useRef<Float32Array | null>(null)
-  const spineX = useRef<number>(0)
+  // Spine is a horizontal axis at the top of the page region. Pages
+  // rotate UP around this axis (page bottom edge rises forward).
+  const spineY = useRef<number>(0)
   const hoverStartTime = useRef<number | null>(null)
   const latestTime = useRef(0)
 
@@ -107,28 +109,24 @@ export function BooksDecoration({
         by[i] = positions[i * 3 + 1]
       }
 
-      // Identify the open-book "page region": top pageRegionFrac of particles
-      // by Y. We compute its X bbox to find the spine (horizontal midpoint).
+      // Identify the page region: top pageRegionFrac of particles by Y.
+      // The spine is a horizontal axis at the TOP of this region — pages
+      // rotate UP around it (bottom edge lifts forward), like a sketchbook
+      // / notepad being flipped open.
       const sortedY = Float32Array.from(by).sort()
       const cutoff = sortedY[Math.floor(n * (1 - pageRegionFrac))]
-      let pageMinX = Infinity
-      let pageMaxX = -Infinity
+      let pageMaxY = -Infinity
       for (let i = 0; i < n; i++) {
-        if (by[i] >= cutoff) {
-          if (bx[i] < pageMinX) pageMinX = bx[i]
-          if (bx[i] > pageMaxX) pageMaxX = bx[i]
-        }
+        if (by[i] >= cutoff && by[i] > pageMaxY) pageMaxY = by[i]
       }
-      // Spine sits at the horizontal middle of the page region (the binding
-      // of the open book on top of the stack). Only particles to the right
-      // of the spine actually flip — they swing up and over to the left,
-      // simulating a single page being turned.
-      const localSpineX = (pageMinX + pageMaxX) / 2
+      // Spine sits a hair above the top of the page particles so r is
+      // strictly positive for every page particle.
+      const localSpineY = pageMaxY + 0.001
       const r = new Float32Array(n)
       for (let i = 0; i < n; i++) {
-        if (by[i] >= cutoff && bx[i] > localSpineX) {
+        if (by[i] >= cutoff) {
           pageFlag[i] = 1
-          r[i] = bx[i] - localSpineX
+          r[i] = localSpineY - by[i]
         }
       }
 
@@ -136,7 +134,7 @@ export function BooksDecoration({
       baseY.current = by
       isPage.current = pageFlag
       pageR.current = r
-      spineX.current = localSpineX
+      spineY.current = localSpineY
       setData({ positions, colors, sizes })
     }
     img.src = '/assets/cat/decorations/deco-cat-books.png'
@@ -199,23 +197,26 @@ export function BooksDecoration({
       return
     }
 
-    // θ goes 0 → π → 0 across the cycle (lift + return). A vertical lift
-    // component peaks at θ=π/2 so the page is visibly elevated when it's
-    // edge-on to the camera (otherwise it'd disappear into a line).
+    // θ goes 0 → π → 0 across the cycle (lift + return). Rotation is in
+    // the YZ plane around the horizontal spine axis at spineY: the page's
+    // bottom edge (highest r) lifts forward in Z, peaks vertical at θ=π/2,
+    // continues over to land behind the spine at θ=π, then reverses.
     const theta = Math.PI * Math.sin(progress * Math.PI)
     const cosT = Math.cos(theta)
     const sinT = Math.sin(theta)
-    const liftY = Math.sin(theta) * scale * liftFrac
-    const sX = spineX.current
+    const sY = spineY.current
     const flag = isPage.current
     const rArr = pageR.current
+    // Tiny extra forward push at the apex so the apex doesn't look exactly
+    // edge-on to the camera (it'd vanish into a line).
+    const apexBoost = sinT * scale * liftFrac
 
     for (let i = 0; i < n; i++) {
       if (flag[i] === 1) {
         const r = rArr[i]
-        positions[i * 3] = sX + r * cosT
-        positions[i * 3 + 1] = baseY.current[i] + liftY
-        positions[i * 3 + 2] = r * sinT
+        positions[i * 3] = baseX.current[i]
+        positions[i * 3 + 1] = sY - r * cosT
+        positions[i * 3 + 2] = r * sinT + apexBoost
       } else {
         positions[i * 3] = baseX.current[i]
         positions[i * 3 + 1] = baseY.current[i]
