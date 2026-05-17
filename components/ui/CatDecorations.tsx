@@ -39,10 +39,21 @@ export function CatDecorations({ textAlpha = 1 }: Props) {
   }
 
   // Sprite frame interpolation. frameValue ∈ [0, NUM_BOOK_FRAMES - 1].
-  // It animates 0 → (NUM_FRAMES-1) → 0 over BOOK_FLIP_DURATION_MS via a
-  // sin envelope on every increment of bookHoverTrigger.
+  // Linear ramp with a brief hold at peak (no sin envelope) so every
+  // adjacent-frame crossfade gets the same time budget — avoids the
+  // ultra-fast 90ms transitions at the start/end of a sin curve, which
+  // were causing visible flicker.
   const [frameValue, setFrameValue] = useState(0)
   const lastHandled = useRef(0)
+
+  // Preload all PNGs at mount so the first crossfade doesn't trigger a
+  // browser decode (which causes a one-frame visual stall).
+  useEffect(() => {
+    for (let i = 0; i < NUM_BOOK_FRAMES; i++) {
+      const img = new Image()
+      img.src = `/assets/cat/decorations/books-frame-${i}.png`
+    }
+  }, [])
 
   useEffect(() => {
     if (bookHoverTrigger === lastHandled.current) return
@@ -50,13 +61,22 @@ export function CatDecorations({ textAlpha = 1 }: Props) {
 
     let raf = 0
     let startTime: number | null = null
+    const maxFrame = NUM_BOOK_FRAMES - 1
     const tick = (now: number) => {
       if (startTime === null) startTime = now
       const elapsed = now - startTime
       const progress = Math.min(1, elapsed / BOOK_FLIP_DURATION_MS)
-      // Sin envelope: 0 → 1 → 0. Multiply by max frame index for fractional
-      // frame position.
-      const v = (NUM_BOOK_FRAMES - 1) * Math.sin(progress * Math.PI)
+      let v: number
+      if (progress < 0.45) {
+        // forward ramp 0 → maxFrame
+        v = (progress / 0.45) * maxFrame
+      } else if (progress < 0.55) {
+        // brief hold at peak so the eye registers the top frame
+        v = maxFrame
+      } else {
+        // backward ramp maxFrame → 0
+        v = ((1 - progress) / 0.45) * maxFrame
+      }
       setFrameValue(v)
       if (progress < 1) raf = requestAnimationFrame(tick)
       else setFrameValue(0)
@@ -82,9 +102,11 @@ export function CatDecorations({ textAlpha = 1 }: Props) {
     opacities[frameLow] = 1 - easedFrac
     opacities[frameLow + 1] = easedFrac
   }
-  // Blur peaks at 4·0.5·0.5 = 1; scale to px range.
+  // Light motion blur during crossfade — capped at 1.5px so it stays
+  // cheap on the GPU. 5px was heavy enough to drop frames and look like
+  // flicker rather than smoothing.
   const blurPx = frameValue > 0 && frameLow < NUM_BOOK_FRAMES - 1
-    ? 4 * frac * (1 - frac) * 5
+    ? 4 * frac * (1 - frac) * 1.5
     : 0
 
   return (
@@ -133,6 +155,8 @@ export function CatDecorations({ textAlpha = 1 }: Props) {
               opacity: opacities[i],
               pointerEvents: 'none',
               userSelect: 'none',
+              willChange: 'opacity',
+              transform: 'translateZ(0)',
             }}
             draggable={false}
           />
