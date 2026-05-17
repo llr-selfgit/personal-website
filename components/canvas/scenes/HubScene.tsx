@@ -51,7 +51,12 @@ export function HubScene({ animal, skipIntro }: Props) {
         />
       )}
       {animal === 'cat' && (
-        <BooksDecoration position={[-3.4, -1.7, 0]} scale={0.5} count={12000} />
+        <BooksDecoration
+          position={[-3.4, -1.7, 0]}
+          scale={0.5}
+          count={12000}
+          pageRegionFrac={0.08}
+        />
       )}
     </PersistentCanvas>
   )
