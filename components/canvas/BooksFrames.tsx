@@ -3,31 +3,40 @@
 import { useEffect, useRef, useState } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { ParticleField } from './ParticleField'
-import { samplePositionsAndColorsFromAlpha } from '@/lib/particles'
+import {
+  samplePositionsAndColorsFromAlpha,
+  samplePositionsAndColorsFromMask,
+} from '@/lib/particles'
 import { useSiteStore } from '@/lib/store'
 
 /**
- * Books decoration — 4-frame sprite, rendered as 4 cross-fading particle
- * clouds (one per hand-drawn frame). Each cloud's particles are sampled
- * from its PNG's alpha + RGB.
+ * Books decoration — stack stays put, only the page animates.
  *
- * Why particles instead of HTML <img> cross-fade: opaque PNGs overlapping
- * at the 50/50 midpoint of a crossfade produce visible double-image
- * "ghosting", which the user perceives as flicker. Sparse particles
- * crossfade more gracefully — overlap reads as "slightly denser sprinkle"
- * rather than "two opaque shapes layered". The transitions feel softer.
+ * The 4 hand-drawn sprite frames are each AI-generated, so even when the
+ * user intends "only the page changes", every regeneration shifts the book
+ * stack's angle / shading subtly. To make the animation feel like only the
+ * page is moving, we partition pixels:
  *
- * Animation: bookHoverTrigger increments → linear ramp through frame
- * values 0 → 3 → 0 over flipDurationSec, with a small hold at the peak.
- * Opacity per cloud follows adjacent-frame crossfade with cosine easing.
- * Idle state: only frame 0 visible.
+ *   - STABLE region: pixels that are opaque in ≥3 of the 4 frames. This is
+ *     the bottom stack (and the unchanged left half of the open book).
+ *     Sampled ONCE from frame 0 and rendered as a fixed particle cloud at
+ *     full opacity throughout the animation.
+ *
+ *   - PAGE regions (per frame): pixels opaque in that frame but NOT in the
+ *     stable set. The page in each frame moves, so different pixels light
+ *     up. 4 small clouds, each sampled from its frame's page mask.
+ *     Crossfaded during the flip animation; the stable layer never blinks.
+ *
+ * Net effect: a single visually-consistent stack with a page-only animation.
  */
 
 interface Props {
   position: [number, number, number]
   scale?: number
-  /** Per-frame particle count. Total particle load is 4 × this. */
-  count?: number
+  /** Particle count for the stable (stack) layer. */
+  stackCount?: number
+  /** Particle count for each per-frame page layer. */
+  pageCount?: number
   flipDurationSec?: number
 }
 
@@ -38,15 +47,52 @@ interface FrameData {
 }
 
 const NUM_FRAMES = 4
-const PEAK_HOLD_FRAC = 0.1 // fraction of total duration spent at peak frame
+const PEAK_HOLD_FRAC = 0.1
+const ALPHA_THRESHOLD = 30
+// A pixel is "stable" if it's opaque in at least this many of the 4 frames.
+const STABLE_MIN_FRAMES = 3
+
+async function loadImageData(src: string): Promise<ImageData> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => {
+      const c = document.createElement('canvas')
+      c.width = img.width
+      c.height = img.height
+      const ctx = c.getContext('2d')!
+      ctx.drawImage(img, 0, 0)
+      resolve(ctx.getImageData(0, 0, img.width, img.height))
+    }
+    img.onerror = reject
+    img.src = src
+  })
+}
+
+function buildFrameData(
+  positions: Float32Array,
+  colors: Float32Array,
+  scale: number,
+  sizeJitter = 0.45,
+): FrameData {
+  for (let i = 0; i < positions.length; i++) positions[i] *= scale
+  const n = positions.length / 3
+  const sizes = new Float32Array(n)
+  for (let i = 0; i < n; i++) sizes[i] = 0.55 + Math.random() * sizeJitter
+  return { positions, colors, sizes }
+}
 
 export function BooksFrames({
   position,
-  scale = 0.5,
-  count = 6000,
+  scale = 0.55,
+  stackCount = 8000,
+  pageCount = 1800,
   flipDurationSec = 1.8,
 }: Props) {
-  const [frames, setFrames] = useState<FrameData[] | null>(null)
+  const [data, setData] = useState<{
+    stack: FrameData
+    pages: FrameData[]
+  } | null>(null)
   const [opacities, setOpacities] = useState<number[]>(() => {
     const init = new Array(NUM_FRAMES).fill(0)
     init[0] = 1
@@ -56,53 +102,76 @@ export function BooksFrames({
   const lastHandled = useRef(0)
   const animStart = useRef<number | null>(null)
 
-  // Load + sample all 4 frames
   useEffect(() => {
     let cancelled = false
-    const loaders = Array.from({ length: NUM_FRAMES }, (_, i) => {
-      return new Promise<FrameData>((resolve, reject) => {
-        const img = new Image()
-        img.crossOrigin = 'anonymous'
-        img.onload = () => {
-          const c = document.createElement('canvas')
-          c.width = img.width
-          c.height = img.height
-          const ctx = c.getContext('2d')!
-          ctx.drawImage(img, 0, 0)
-          const imageData = ctx.getImageData(0, 0, img.width, img.height)
-          const { positions, colors } = samplePositionsAndColorsFromAlpha(
-            imageData,
-            count,
-            1,
-          )
-          const n = positions.length / 3
-          for (let j = 0; j < positions.length; j++) positions[j] *= scale
-          const sizes = new Float32Array(n)
-          for (let j = 0; j < n; j++) sizes[j] = 0.55 + Math.random() * 0.45
-          resolve({ positions, colors, sizes })
+    Promise.all(
+      Array.from({ length: NUM_FRAMES }, (_, i) =>
+        loadImageData(`/assets/cat/decorations/books-frame-${i}.png`),
+      ),
+    ).then((frames) => {
+      if (cancelled) return
+      const w = frames[0].width
+      const h = frames[0].height
+      const pixelCount = w * h
+
+      // Build masks. A pixel is "stable" if it's opaque in ≥ STABLE_MIN_FRAMES
+      // of the 4 frames; otherwise it's a page pixel in whichever frames have
+      // it opaque.
+      const stableMask = new Uint8Array(pixelCount)
+      const pageMasks = Array.from({ length: NUM_FRAMES }, () => new Uint8Array(pixelCount))
+
+      for (let i = 0; i < pixelCount; i++) {
+        const idx = i * 4
+        let opaqueCount = 0
+        const opaque = [false, false, false, false]
+        for (let f = 0; f < NUM_FRAMES; f++) {
+          if (frames[f].data[idx + 3] > ALPHA_THRESHOLD) {
+            opaque[f] = true
+            opaqueCount++
+          }
         }
-        img.onerror = reject
-        img.src = `/assets/cat/decorations/books-frame-${i}.png`
+        if (opaqueCount >= STABLE_MIN_FRAMES) {
+          stableMask[i] = 1
+        } else {
+          for (let f = 0; f < NUM_FRAMES; f++) {
+            if (opaque[f]) pageMasks[f][i] = 1
+          }
+        }
+      }
+
+      // Sample stable layer from frame 0 (its colors define the consistent
+      // stack look).
+      const stableRaw = samplePositionsAndColorsFromMask(
+        frames[0],
+        stableMask,
+        stackCount,
+        1,
+      )
+      const stack = buildFrameData(stableRaw.positions, stableRaw.colors, scale)
+
+      // Sample page layer for each frame using its own mask + own colors.
+      const pages = pageMasks.map((mask, i) => {
+        // Use unmasked sampler when a page mask happens to be empty (defensive).
+        const raw =
+          mask.some((v) => v)
+            ? samplePositionsAndColorsFromMask(frames[i], mask, pageCount, 1)
+            : samplePositionsAndColorsFromAlpha(frames[i], 1, 1)
+        return buildFrameData(raw.positions, raw.colors, scale, 0.35)
       })
-    })
-    Promise.all(loaders).then((loaded) => {
-      if (!cancelled) setFrames(loaded)
+
+      setData({ stack, pages })
     })
     return () => {
       cancelled = true
     }
-  }, [count, scale])
+  }, [stackCount, pageCount, scale])
 
-  // Trigger animation on each new bookHoverTrigger value
   useEffect(() => {
     if (bookHoverTrigger === lastHandled.current) return
     lastHandled.current = bookHoverTrigger
-    if (animStart.current === null) {
-      animStart.current = performance.now()
-    }
+    if (animStart.current === null) animStart.current = performance.now()
   }, [bookHoverTrigger])
 
-  // Drive opacities each animation frame
   useFrame(() => {
     if (animStart.current === null) return
     const elapsed = (performance.now() - animStart.current) / 1000
@@ -114,9 +183,6 @@ export function BooksFrames({
       setOpacities(rest)
       return
     }
-
-    // Linear ramp with peak hold (no sin envelope — even pacing avoids
-    // ultra-fast end-segment transitions that read as flicker).
     const maxFrame = NUM_FRAMES - 1
     const rampWidth = 0.5 - PEAK_HOLD_FRAC / 2
     let frameValue: number
@@ -127,31 +193,36 @@ export function BooksFrames({
     } else {
       frameValue = ((1 - progress) / rampWidth) * maxFrame
     }
-
     const frameLow = Math.floor(frameValue)
     const frac = frameValue - frameLow
-    // Cosine ease for smooth opacity ramp
     const eased = 0.5 - 0.5 * Math.cos(Math.PI * frac)
     const ops = new Array(NUM_FRAMES).fill(0)
-    if (frameLow >= maxFrame) {
-      ops[maxFrame] = 1
-    } else {
+    if (frameLow >= maxFrame) ops[maxFrame] = 1
+    else {
       ops[frameLow] = 1 - eased
       ops[frameLow + 1] = eased
     }
     setOpacities(ops)
   })
 
-  if (!frames) return null
+  if (!data) return null
 
   return (
     <group position={position}>
-      {frames.map((f, i) => (
+      {/* Stable stack — always full opacity, never blinks. */}
+      <ParticleField
+        positions={data.stack.positions}
+        colors={data.stack.colors}
+        sizes={data.stack.sizes}
+        introAlpha={1}
+      />
+      {/* Page layers — only this part crossfades between frames. */}
+      {data.pages.map((p, i) => (
         <ParticleField
           key={i}
-          positions={f.positions}
-          colors={f.colors}
-          sizes={f.sizes}
+          positions={p.positions}
+          colors={p.colors}
+          sizes={p.sizes}
           introAlpha={opacities[i]}
         />
       ))}

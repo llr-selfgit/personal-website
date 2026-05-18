@@ -75,6 +75,46 @@ export function samplePositionsAndColorsFromAlpha(
   }
 }
 
+/**
+ * Same as samplePositionsAndColorsFromAlpha, but only samples pixels whose
+ * mask[y*W + x] is non-zero. Used for partitioning a single source image
+ * into stable / animated regions for layered particle rendering.
+ */
+export function samplePositionsAndColorsFromMask(
+  img: ImageData,
+  mask: Uint8Array,
+  n: number,
+  aspect = 1
+): { positions: Float32Array; colors: Float32Array } {
+  const positions: number[] = []
+  const colors: number[] = []
+  const dW = img.width
+  const dH = img.height
+  const maxAttempts = n * 30
+  let attempts = 0
+
+  while (positions.length / 3 < n && attempts < maxAttempts) {
+    attempts++
+    const x = Math.floor(Math.random() * dW)
+    const y = Math.floor(Math.random() * dH)
+    const pi = y * dW + x
+    if (mask[pi] === 0) continue
+    const idx = pi * 4
+    const alpha = img.data[idx + 3]
+    if (alpha > 30 && Math.random() < alpha / 255) {
+      const nx = ((x / dW) * 2 - 1) * aspect
+      const ny = -((y / dH) * 2 - 1)
+      positions.push(nx, ny, 0)
+      colors.push(img.data[idx] / 255, img.data[idx + 1] / 255, img.data[idx + 2] / 255)
+    }
+  }
+
+  return {
+    positions: new Float32Array(positions),
+    colors: new Float32Array(colors),
+  }
+}
+
 /** Particle counts per device tier (spec § 7 / § 10). */
 export const PARTICLE_COUNTS: Record<DeviceTier, ParticleConfig> = {
   high: { hubCharacter: 80000, hubAmbient: 5000, entryHover: 70000, entryIdle: 4000 },

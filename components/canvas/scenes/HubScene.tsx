@@ -54,7 +54,8 @@ export function HubScene({ animal, skipIntro }: Props) {
         <BooksFrames
           position={[-3.5, -1.6, 0]}
           scale={0.55}
-          count={6000}
+          stackCount={8000}
+          pageCount={1800}
           flipDurationSec={1.8}
         />
       )}
