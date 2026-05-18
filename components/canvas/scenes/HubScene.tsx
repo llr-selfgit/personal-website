@@ -55,7 +55,7 @@ export function HubScene({ animal, skipIntro }: Props) {
           position={[-3.5, -1.6, 0]}
           scale={0.55}
           stackCount={8000}
-          pageCount={1800}
+          pageCount={4000}
           flipDurationSec={1.8}
         />
       )}

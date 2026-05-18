@@ -49,8 +49,11 @@ interface FrameData {
 const NUM_FRAMES = 4
 const PEAK_HOLD_FRAC = 0.1
 const ALPHA_THRESHOLD = 30
-// A pixel is "stable" if it's opaque in at least this many of the 4 frames.
-const STABLE_MIN_FRAMES = 3
+// Sum of |Δr|+|Δg|+|Δb| above this between frame 0 and any other frame at
+// the same pixel marks the pixel as "page" (changing content), even if all
+// 4 frames have alpha there. Tune higher to be more tolerant of AI render
+// noise; tune lower to push more pixels into the page layer.
+const RGB_DIFF_THRESHOLD = 50
 
 async function loadImageData(src: string): Promise<ImageData> {
   return new Promise((resolve, reject) => {
@@ -114,23 +117,43 @@ export function BooksFrames({
       const h = frames[0].height
       const pixelCount = w * h
 
-      // Build masks. A pixel is "stable" if it's opaque in ≥ STABLE_MIN_FRAMES
-      // of the 4 frames; otherwise it's a page pixel in whichever frames have
-      // it opaque.
+      // Build masks. A pixel is "stable" only if (a) all 4 frames are opaque
+      // AND (b) their RGB content is consistent (sum-of-abs-diffs between
+      // frame 0 and each other frame ≤ RGB_DIFF_THRESHOLD). Pixels that
+      // differ in alpha OR color across frames → page layer in whichever
+      // frames have alpha there.
       const stableMask = new Uint8Array(pixelCount)
       const pageMasks = Array.from({ length: NUM_FRAMES }, () => new Uint8Array(pixelCount))
 
       for (let i = 0; i < pixelCount; i++) {
         const idx = i * 4
-        let opaqueCount = 0
         const opaque = [false, false, false, false]
+        let opaqueCount = 0
         for (let f = 0; f < NUM_FRAMES; f++) {
           if (frames[f].data[idx + 3] > ALPHA_THRESHOLD) {
             opaque[f] = true
             opaqueCount++
           }
         }
-        if (opaqueCount >= STABLE_MIN_FRAMES) {
+
+        let isStable = false
+        if (opaqueCount === NUM_FRAMES) {
+          // All 4 opaque — compare RGB to frame 0.
+          const r0 = frames[0].data[idx]
+          const g0 = frames[0].data[idx + 1]
+          const b0 = frames[0].data[idx + 2]
+          let maxDiff = 0
+          for (let f = 1; f < NUM_FRAMES; f++) {
+            const diff =
+              Math.abs(frames[f].data[idx] - r0) +
+              Math.abs(frames[f].data[idx + 1] - g0) +
+              Math.abs(frames[f].data[idx + 2] - b0)
+            if (diff > maxDiff) maxDiff = diff
+          }
+          if (maxDiff <= RGB_DIFF_THRESHOLD) isStable = true
+        }
+
+        if (isStable) {
           stableMask[i] = 1
         } else {
           for (let f = 0; f < NUM_FRAMES; f++) {
