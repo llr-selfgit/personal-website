@@ -52,7 +52,7 @@ export function HubScene({ animal, skipIntro }: Props) {
       )}
       {animal === 'cat' && (
         <BooksFrames
-          position={[-3.5, -1.85, 0]}
+          position={[-3.5, -2.0, 0]}
           scale={0.55}
           stackCount={12000}
           pageCount={6000}
