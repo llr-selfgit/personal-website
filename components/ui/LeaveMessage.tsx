@@ -64,6 +64,9 @@ export function LeaveMessage({ animal, voice, textAlpha = 1 }: Props) {
         WebkitBackdropFilter: 'blur(2px)',
         padding: '16px 18px',
         maxWidth: '360px',
+        // hub overlay is pointer-events:none so the canvas underneath can
+        // receive hover; this form region needs to opt back in.
+        pointerEvents: 'auto',
       }}
       className="font-cat-zh"
     >

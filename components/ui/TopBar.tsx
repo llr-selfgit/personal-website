@@ -25,7 +25,12 @@ export function TopBar({ animal, textAlpha }: Props) {
   return (
     <header
       className="fixed top-0 right-0 z-20 p-4 flex items-center gap-2"
-      style={{ opacity: textAlpha ?? 1, transition: 'opacity 350ms ease-out' }}
+      style={{
+        opacity: textAlpha ?? 1,
+        transition: 'opacity 350ms ease-out',
+        // hub overlay is pointer-events:none; opt back in for the buttons.
+        pointerEvents: 'auto',
+      }}
     >
       <button
         onClick={() => setSwitchAnimalOpen(true)}
