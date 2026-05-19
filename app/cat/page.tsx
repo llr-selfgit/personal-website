@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { initStoreBrowser, useSiteStore } from '@/lib/store'
 import { HubScene } from '@/components/canvas/scenes/HubScene'
 import { TopBar } from '@/components/ui/TopBar'
@@ -103,21 +104,29 @@ export default function CatHubPage() {
         >
           <QuoteHero animal="cat" quotes={quotes} textAlpha={intro.textAlpha} />
 
-          {/* Nav 子页 — D persona "hover 才浮现" */}
+          {/* Nav 子页 — D persona "hover 才浮现"
+              外层 overlay 是 pointer-events:none（让画布接收 R3F hover）。
+              每个 Link 各自 pointer-events:auto 开自己的点击区，其余空白
+              透传给后面的画布。 */}
           <nav
             className="pb-24"
             style={{ opacity: intro.textAlpha, transition: 'opacity 350ms ease-out' }}
           >
-            <ul className="flex flex-col md:flex-row gap-8 text-cat-heading opacity-50 hover:opacity-100 transition-opacity duration-700">
+            <ul className="inline-flex flex-col md:flex-row md:flex-wrap gap-x-8 gap-y-4 text-cat-heading opacity-50 hover:opacity-100 transition-opacity duration-700">
               <li>
-                <a href="/cat/essays" className="font-cat-zh text-lg border-b border-cat-accent/40 hover:border-cat-accent pb-1 transition">
+                <Link href="/cat/essays" className="pointer-events-auto font-cat-zh text-lg border-b border-cat-accent/40 hover:border-cat-accent pb-1 transition">
                   {voice.essaysLink} →
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="/cat/toys" className="font-cat-zh text-lg border-b border-cat-accent/40 hover:border-cat-accent pb-1 transition">
+                <Link href="/cat/toys" className="pointer-events-auto font-cat-zh text-lg border-b border-cat-accent/40 hover:border-cat-accent pb-1 transition">
                   {voice.toysLink} →
-                </a>
+                </Link>
+              </li>
+              <li>
+                <Link href="/cat/photos" className="pointer-events-auto font-cat-zh text-lg border-b border-cat-accent/40 hover:border-cat-accent pb-1 transition">
+                  {voice.photosLink} →
+                </Link>
               </li>
             </ul>
           </nav>
