@@ -8,7 +8,7 @@ describe('NoteTag', () => {
     render(<NoteTag animal="cat" bio={catBio} textAlpha={1} />)
     expect(screen.getAllByText(catBio.name.split(' · ')[0]).length).toBeGreaterThan(0)
     expect(screen.getByText(catBio.tagline)).toBeInTheDocument()
-    expect(screen.getByText(/hover to read more/i)).toBeInTheDocument()
+    expect(screen.getByText(/read more/i)).toBeInTheDocument()
   })
 
   it('hides expanded bio body until hover/focus', () => {

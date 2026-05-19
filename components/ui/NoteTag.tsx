@@ -49,8 +49,8 @@ export function NoteTag({ animal, bio, textAlpha }: Props) {
       }}
       style={{
         position: 'fixed',
-        left: '40px',
-        top: '110px',
+        left: 'clamp(16px, 4vw, 40px)',
+        top: 'clamp(80px, 12vw, 110px)',
         opacity: textAlpha,
         zIndex: 30,
         pointerEvents: textAlpha > 0.5 ? 'auto' : 'none',
@@ -62,6 +62,7 @@ export function NoteTag({ animal, bio, textAlpha }: Props) {
         type="button"
         aria-expanded={open}
         aria-label={`关于 ${bio.name}`}
+        onClick={() => setOpen(true)}
         className={FONT_ZH[animal]}
         style={{
           background: 'transparent',
@@ -104,7 +105,7 @@ export function NoteTag({ animal, bio, textAlpha }: Props) {
           className={FONT_EN[animal]}
           style={{ fontSize: '10px', opacity: 0.45, marginTop: '8px', color: palette.muted, fontStyle: 'italic' }}
         >
-          hover to read more →
+          read more →
         </div>
       </button>
 
@@ -115,7 +116,7 @@ export function NoteTag({ animal, bio, textAlpha }: Props) {
           position: 'absolute',
           left: '0',
           top: '0',
-          width: '320px',
+          width: 'min(320px, calc(100vw - 32px))',
           background: palette.expandedBg,
           backdropFilter: 'blur(6px)',
           WebkitBackdropFilter: 'blur(6px)',

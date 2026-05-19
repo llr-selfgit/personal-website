@@ -96,12 +96,10 @@ export default function CatHubPage() {
 
         <NoteTag animal="cat" bio={catBio} textAlpha={intro.textAlpha} />
 
-        {/* Centered + slightly right-shifted content column.
-            All three sections share the same container so left edges align. */}
-        <div
-          className="max-w-2xl mx-auto px-8"
-          style={{ transform: 'translateX(5vw)' }}
-        >
+        {/* Centered + slightly right-shifted content column on ≥md.
+            Mobile (< md): pure centered, no shift — keeps content fully on
+            screen on narrow viewports. */}
+        <div className="max-w-2xl mx-auto px-6 md:px-8 md:translate-x-[5vw]">
           <QuoteHero animal="cat" quotes={quotes} textAlpha={intro.textAlpha} />
 
           {/* Nav 子页 — D persona "hover 才浮现"
@@ -112,7 +110,7 @@ export default function CatHubPage() {
             className="pb-24"
             style={{ opacity: intro.textAlpha, transition: 'opacity 350ms ease-out' }}
           >
-            <ul className="inline-flex flex-col md:flex-row md:flex-wrap gap-x-8 gap-y-4 text-cat-heading opacity-50 hover:opacity-100 transition-opacity duration-700">
+            <ul className="inline-flex flex-col md:flex-row md:flex-wrap gap-x-8 gap-y-4 text-cat-heading opacity-50 hover:opacity-100 focus-within:opacity-100 transition-opacity duration-700">
               <li>
                 <Link href="/cat/essays" className="pointer-events-auto font-cat-zh text-lg border-b border-cat-accent/40 hover:border-cat-accent pb-1 transition">
                   {voice.essaysLink} →

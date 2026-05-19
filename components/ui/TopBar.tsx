@@ -32,14 +32,16 @@ export function TopBar({ animal, textAlpha }: Props) {
         className={`px-3 py-1.5 text-xs ${accentClass} hover:opacity-100 opacity-70 transition border border-current rounded`}
         aria-label={voice.switchAnimal}
       >
-        ⟲ {voice.switchAnimal}
+        <span aria-hidden>⟲</span>
+        <span className="hidden sm:inline ml-1">{voice.switchAnimal}</span>
       </button>
       <button
         onClick={() => setLeaveMessageOpen(true)}
         className={`px-3 py-1.5 text-xs ${accentClass} hover:opacity-100 opacity-70 transition border border-current rounded`}
         aria-label={voice.leaveMessage}
       >
-        💬 {voice.leaveMessage}
+        <span aria-hidden>💬</span>
+        <span className="hidden sm:inline ml-1">{voice.leaveMessage}</span>
       </button>
     </header>
   )
